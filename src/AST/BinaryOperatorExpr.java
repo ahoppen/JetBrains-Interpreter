@@ -3,6 +3,7 @@ package AST;
 import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import utils.ASTVisitor;
 
 public class BinaryOperatorExpr extends Expr {
 
@@ -43,5 +44,10 @@ public class BinaryOperatorExpr extends Expr {
     @Override
     public Type getType() {
         return lhs.getType();
+    }
+
+    @Override
+    public <T> T acceptVisitor(ASTVisitor<T> visitor) {
+        return visitor.visitBinaryOperatorExpr(this);
     }
 }
