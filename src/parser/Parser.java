@@ -3,10 +3,7 @@ package parser;
 import AST.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import utils.ASTConsumer;
-import utils.Diag;
-import utils.Diagnostics;
-import utils.ErrorsVerifier;
+import utils.*;
 
 import java.io.Reader;
 
@@ -52,7 +49,7 @@ public class Parser {
                 assert token.getPayload() != null;
                 switch (token.getPayload()) {
                     case "var":
-                        AssignStmt assignmentStmt = parseAssignment();
+                        AssignStmt assignmentStmt = parseAssignment(token.getLocation());
                         if (assignmentStmt != null) {
                             return assignmentStmt;
                         } else {
@@ -62,7 +59,7 @@ public class Parser {
                     case "out":
                         Expr expr = parseExpr();
                         if (expr != null) {
-                            return new OutStmt(expr);
+                            return new OutStmt(token.getLocation(), expr);
                         } else {
                             break;
                         }
@@ -76,14 +73,14 @@ public class Parser {
         }
     }
 
-    private Identifier parseIdentifier(String diag) {
+    private Variable parseVariable(String diag) {
         Token nextToken = consumeToken();
         if (nextToken.getKind() != Token.Kind.IDENTIFIER) {
             Diagnostics.error(nextToken, diag, nextToken.toSourceString());
             return null;
         }
         assert nextToken.getPayload() != null;
-        return new Identifier(nextToken.getPayload());
+        return new Variable(nextToken.getPayload());
     }
 
     /**
@@ -91,11 +88,10 @@ public class Parser {
      * @return A parsed assignment in the source code or <code>null</code> if none could be parsed
      */
     @Nullable
-    private AssignStmt parseAssignment() {
-
+    private AssignStmt parseAssignment(@NotNull SourceLoc location) {
         // Parse identifier
-        Identifier ident = parseIdentifier(Diag.expected_ident_after_var);
-        if (ident == null) {
+        Variable variable = parseVariable(Diag.expected_ident_after_var);
+        if (variable == null) {
             return null;
         }
 
@@ -114,7 +110,7 @@ public class Parser {
             // Parsing the expression failed. Errors have already been reported, just return null
             return null;
         }
-        return new AssignStmt(ident, expr);
+        return new AssignStmt(location, variable, expr);
     }
 
     private BinaryOperatorExpr.Operator getOperatorForToken(Token token) {
@@ -166,7 +162,8 @@ public class Parser {
                     if (rhs == null) {
                         return null;
                     }
-                    workingExpr = new BinaryOperatorExpr(workingExpr, operator, rhs);
+                    workingExpr = new BinaryOperatorExpr(nextToken.getLocation(), workingExpr,
+                            operator, rhs);
                 } else {
                     break;
                 }
@@ -188,14 +185,14 @@ public class Parser {
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 int value = Integer.parseInt(nextToken.getPayload());
-                return new IntLiteralExpr(value);
+                return new IntLiteralExpr(nextToken.getLocation(), value);
             }
             case FLOAT_LITERAL: {
                 consumeToken();
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 double value = Double.parseDouble(nextToken.getPayload());
-                return new FloatLiteralExpr(value);
+                return new FloatLiteralExpr(nextToken.getLocation(), value);
             }
             case L_PAREN: {
                 consumeToken();
@@ -206,7 +203,7 @@ public class Parser {
                 if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
                     return null;
                 }
-                return new ParenExpr(subExpr);
+                return new ParenExpr(nextToken.getLocation(), subExpr);
             }
             case L_BRACE: {
                 consumeToken();
@@ -224,19 +221,19 @@ public class Parser {
                 if (!consumeToken(Token.Kind.R_BRACE, Diag.r_brace_expected)) {
                     return null;
                 }
-                return new RangeExpr(lowerBound, upperBound);
+                return new RangeExpr(nextToken.getLocation(), lowerBound, upperBound);
             }
             case IDENTIFIER: {
                 consumeToken();
                 assert nextToken.getPayload() != null;
                 switch (nextToken.getPayload()) {
                     case "map":
-                        return parseMapExpr();
+                        return parseMapExpr(nextToken.getLocation());
                     case "reduce":
-                        return parseReduceExpr();
+                        return parseReduceExpr(nextToken.getLocation());
                     default:
-                        Identifier identifier = new Identifier(nextToken.getPayload());
-                        return new IdentifierRefExpr(identifier);
+                        return new IdentifierRefExpr(nextToken.getLocation(),
+                                nextToken.getPayload());
                 }
             }
             default: {
@@ -255,7 +252,7 @@ public class Parser {
      * parsed expression or <code>null</code> if parsing failed
      * @return A parsed map expression or <code>null</code> if the expression could not be parsed
      */
-    private MapExpr parseMapExpr() {
+    private MapExpr parseMapExpr(@NotNull SourceLoc location) {
         // '('
         if (!consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected)) {
             return null;
@@ -270,7 +267,7 @@ public class Parser {
             return null;
         }
         // var
-        Identifier param = parseIdentifier(Diag.expected_lambda_parameter);
+        Variable param = parseVariable(Diag.expected_lambda_parameter);
         if (param == null) {
             return null;
         }
@@ -287,7 +284,7 @@ public class Parser {
         if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
             return null;
         }
-        return new MapExpr(argument, param, lambda);
+        return new MapExpr(location, argument, param, lambda);
     }
 
     /**
@@ -296,7 +293,7 @@ public class Parser {
      * successfully parsed expression or <code>null</code> if parsing failed
      * @return A parsed reduce expression or <code>null</code> if the expression could not be parsed
      */
-    private ReduceExpr parseReduceExpr() {
+    private ReduceExpr parseReduceExpr(@NotNull SourceLoc location) {
         // '('
         if (!consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected)) {
             return null;
@@ -320,12 +317,12 @@ public class Parser {
             return null;
         }
         // var
-        Identifier lambdaParam1 = parseIdentifier(Diag.expected_lambda_parameter);
+        Variable lambdaParam1 = parseVariable(Diag.expected_lambda_parameter);
         if (lambdaParam1 == null) {
             return null;
         }
         // var
-        Identifier lambdaParam2 = parseIdentifier(Diag.expected_lambda_parameter);
+        Variable lambdaParam2 = parseVariable(Diag.expected_lambda_parameter);
         if (lambdaParam2 == null) {
             return null;
         }
@@ -342,7 +339,7 @@ public class Parser {
         if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
             return null;
         }
-        return new ReduceExpr(base, sequence, lambdaParam1, lambdaParam2, lambda);
+        return new ReduceExpr(location, base, sequence, lambdaParam1, lambdaParam2, lambda);
     }
 
     /**

@@ -1,17 +1,17 @@
 package AST;
 
-import AST.Type.SequenceType;
-import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class MapExpr extends Expr {
     @NotNull private final Expr argument;
-    @NotNull private final Identifier lambdaParam;
+    @NotNull private final Variable lambdaParam;
     @NotNull private final Expr lambda;
 
-    public MapExpr(@NotNull Expr argument, @NotNull Identifier lambdaParam, @NotNull Expr lambda) {
+    public MapExpr(@NotNull SourceLoc location, @NotNull Expr argument,
+                   @NotNull Variable lambdaParam, @NotNull Expr lambda) {
+        super(location);
         this.argument = argument;
         this.lambdaParam = lambdaParam;
         this.lambda = lambda;
@@ -23,23 +23,13 @@ public class MapExpr extends Expr {
     }
 
     @NotNull
-    public Identifier getLambdaParam() {
+    public Variable getLambdaParam() {
         return lambdaParam;
     }
 
     @NotNull
     public Expr getLambda() {
         return lambda;
-    }
-
-    @Nullable
-    @Override
-    public Type getType() {
-        if (lambda.getType() == null) {
-            return null;
-        } else {
-            return new SequenceType(lambda.getType());
-        }
     }
 
     @Override

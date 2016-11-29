@@ -4,23 +4,19 @@ import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class IdentifierRefExpr extends Expr {
-    @NotNull private final Identifier identifier;
+    @NotNull private final String identifier;
 
-    public IdentifierRefExpr(@NotNull Identifier identifier) {
+    public IdentifierRefExpr(@NotNull SourceLoc location, @NotNull String identifier) {
+        super(location);
         this.identifier = identifier;
     }
 
     @NotNull
-    public Identifier getIdentifier() {
+    public String getIdentifier() {
         return identifier;
-    }
-
-    @Nullable
-    @Override
-    public Type getType() {
-        return identifier.getType();
     }
 
     @Override

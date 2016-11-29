@@ -4,22 +4,18 @@ import AST.Type.IntType;
 import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class IntLiteralExpr extends Expr {
     private final int value;
 
-    public IntLiteralExpr(int value) {
+    public IntLiteralExpr(@NotNull SourceLoc location, int value) {
+        super(location);
         this.value = value;
     }
 
     public int getValue() {
         return value;
-    }
-
-    @NotNull
-    @Override
-    public Type getType() {
-        return IntType.get();
     }
 
     @Override

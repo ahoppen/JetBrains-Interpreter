@@ -19,4 +19,9 @@ public class SequenceType extends Type {
     public boolean equals(Object obj) {
         return obj instanceof SequenceType && subType.equals(((SequenceType)obj).getSubType());
     }
+
+    @Override
+    public String toString() {
+        return "Sequence<" + subType + ">";
+    }
 }

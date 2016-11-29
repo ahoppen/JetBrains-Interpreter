@@ -1,19 +1,20 @@
 package AST;
 
-import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class ReduceExpr extends Expr {
     @NotNull private final Expr base;
     @NotNull private final Expr sequence;
-    @NotNull private final Identifier lambdaParam1;
-    @NotNull private final Identifier lambdaParam2;
+    @NotNull private final Variable lambdaParam1;
+    @NotNull private final Variable lambdaParam2;
     @NotNull private final Expr lambda;
 
-    public ReduceExpr(@NotNull Expr base, @NotNull Expr sequence, @NotNull Identifier lambdaParam1,
-                      @NotNull Identifier lambdaParam2, @NotNull Expr lambda) {
+    public ReduceExpr(@NotNull SourceLoc location, @NotNull Expr base, @NotNull Expr sequence,
+                      @NotNull Variable lambdaParam1, @NotNull Variable lambdaParam2,
+                      @NotNull Expr lambda) {
+        super(location);
         this.base = base;
         this.sequence = sequence;
         this.lambdaParam1 = lambdaParam1;
@@ -32,24 +33,18 @@ public class ReduceExpr extends Expr {
     }
 
     @NotNull
-    public Identifier getLambdaParam1() {
+    public Variable getLambdaParam1() {
         return lambdaParam1;
     }
 
     @NotNull
-    public Identifier getLambdaParam2() {
+    public Variable getLambdaParam2() {
         return lambdaParam2;
     }
 
     @NotNull
     public Expr getLambda() {
         return lambda;
-    }
-
-    @Nullable
-    @Override
-    public Type getType() {
-        return base.getType();
     }
 
     @Override

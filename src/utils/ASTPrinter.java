@@ -54,12 +54,6 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
     }
 
     @Override
-    public Void visitErrorExpr(ErrorExpr errorExpr) {
-        print("(errorExpr)");
-        return null;
-    }
-
-    @Override
     public Void visitFloatLiteralExpr(FloatLiteralExpr floatLiteralExpr) {
         print("(floatLiteralExpr value=" + floatLiteralExpr.getValue() + ")");
         return null;
@@ -67,7 +61,7 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitIdentifierRefExpr(IdentifierRefExpr identifierRefExpr) {
-        print("(identifierRefExpr identifier=" + identifierRefExpr.getIdentifier().getName() + ")");
+        print("(identifierRefExpr identifier=" + identifierRefExpr.getIdentifier() + ")");
         return null;
     }
 

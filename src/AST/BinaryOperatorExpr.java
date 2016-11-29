@@ -4,6 +4,7 @@ import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class BinaryOperatorExpr extends Expr {
 
@@ -33,13 +34,31 @@ public class BinaryOperatorExpr extends Expr {
                     throw new RuntimeException("Unknown operator: " + this);
             }
         }
+
+        public String toSourceString() {
+            switch (this) {
+                case ADD:
+                    return "+";
+                case SUB:
+                    return "-";
+                case MULT:
+                    return "*";
+                case DIV:
+                    return "/";
+                case POW:
+                    return "^";
+                default:
+                    throw new RuntimeException("Unknown operator: " + this);
+            }
+        }
     }
 
     @NotNull private final Expr lhs;
     @NotNull private final Operator op;
     @NotNull private final Expr rhs;
 
-    public BinaryOperatorExpr(@NotNull Expr lhs, @NotNull Operator op, @NotNull Expr rhs) {
+    public BinaryOperatorExpr(@NotNull SourceLoc location, @NotNull Expr lhs, @NotNull Operator op, @NotNull Expr rhs) {
+        super(location);
         this.lhs = lhs;
         this.op = op;
         this.rhs = rhs;
@@ -58,12 +77,6 @@ public class BinaryOperatorExpr extends Expr {
     @NotNull
     public Expr getRhs() {
         return rhs;
-    }
-
-    @Nullable
-    @Override
-    public Type getType() {
-        return lhs.getType();
     }
 
     @Override

@@ -4,23 +4,19 @@ import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class ParenExpr extends Expr {
     @NotNull private final Expr subExpr;
 
-    public ParenExpr(@NotNull Expr subExpr) {
+    public ParenExpr(@NotNull SourceLoc location, @NotNull Expr subExpr) {
+        super(location);
         this.subExpr = subExpr;
     }
 
     @NotNull
     public Expr getSubExpr() {
         return subExpr;
-    }
-
-    @Nullable
-    @Override
-    public Type getType() {
-        return subExpr.getType();
     }
 
     @Override

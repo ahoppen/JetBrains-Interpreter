@@ -4,11 +4,11 @@ import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class Identifier {
+public class Variable {
     @NotNull private final String name;
     @Nullable private Type type = null;
 
-    public Identifier(@NotNull String name) {
+    public Variable(@NotNull String name) {
         this.name = name;
     }
 
@@ -17,8 +17,9 @@ public class Identifier {
         return name;
     }
 
-    @Nullable
+    @NotNull
     public Type getType() {
+        assert type != null : "Type of variable has not been declared yet";
         return type;
     }
 

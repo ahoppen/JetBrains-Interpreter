@@ -2,18 +2,20 @@ package AST;
 
 import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class AssignStmt extends Stmt {
-    @NotNull private final Identifier lhs;
+    @NotNull private final Variable lhs;
     @NotNull private final Expr rhs;
 
-    public AssignStmt(@NotNull Identifier lhs, @NotNull Expr rhs) {
+    public AssignStmt(@NotNull SourceLoc location, @NotNull Variable lhs, @NotNull Expr rhs) {
+        super(location);
         this.lhs = lhs;
         this.rhs = rhs;
     }
 
     @NotNull
-    public Identifier getLhs() {
+    public Variable getLhs() {
         return lhs;
     }
 

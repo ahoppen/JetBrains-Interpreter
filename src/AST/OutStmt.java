@@ -2,12 +2,14 @@ package AST;
 
 import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
+import utils.SourceLoc;
 
 public class OutStmt extends Stmt {
     @NotNull
     private final Expr argument;
 
-    public OutStmt(@NotNull Expr argument) {
+    public OutStmt(@NotNull SourceLoc location, @NotNull Expr argument) {
+        super(location);
         this.argument = argument;
     }
 
