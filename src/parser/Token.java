@@ -24,7 +24,8 @@ public class Token {
         STRING_LITERAL,
         ASSIGN,
         ERROR,
-        COMMENT
+        COMMENT,
+        EOF
     }
 
     @NotNull private final Kind kind;
@@ -111,6 +112,8 @@ public class Token {
             case COMMENT:
                 assert getPayload() != null;
                 return getPayload();
+            case EOF:
+                return "EOF";
             default:
                 throw new RuntimeException("Unknown token kind: " + getKind());
         }

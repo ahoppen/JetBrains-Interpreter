@@ -17,7 +17,7 @@ public class Lexer {
         scanner = new Scanner(inputReader);
     }
 
-    @Nullable
+    @NotNull
     public Token nextToken() {
         try {
             while (Character.isWhitespace(scanner.peek())) {
@@ -92,7 +92,7 @@ public class Lexer {
                     return createSingeCharToken(Token.Kind.ERROR);
             }
         } catch (EOFException e) {
-            return null;
+            return new Token(Token.Kind.EOF, scanner.getCurrentSourceLoc());
         }
     }
 

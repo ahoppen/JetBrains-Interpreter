@@ -42,7 +42,7 @@ public class CommandLineDriver {
                 Lexer lexer = new Lexer(reader);
                 Token token = lexer.nextToken();
                 ErrorsVerifier verifier = new ErrorsVerifier();
-                while (token != null) {
+                while (token.getKind() !=  Token.Kind.EOF) {
                     if (token.getKind() != Token.Kind.COMMENT) {
                         System.out.println(token);
                     }

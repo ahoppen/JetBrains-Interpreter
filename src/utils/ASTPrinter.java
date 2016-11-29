@@ -79,7 +79,13 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitMapExpr(MapExpr mapExpr) {
-        throw new RuntimeException("Not yet implemented!");
+        print("(mapExpr param=" + mapExpr.getLambdaParam().getName());
+        increaseIndentation();
+        visit(mapExpr.getArgument());
+        visit(mapExpr.getLambda());
+        decreaseIndentation();
+        print(")");
+        return null;
     }
 
     @Override
@@ -119,7 +125,15 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitReduceExpr(ReduceExpr reduceExpr) {
-        throw new RuntimeException("Not yet implemented!");
+        print("(reduceExpr param1=" + reduceExpr.getLambdaParam1().getName() +
+                " param2=" + reduceExpr.getLambdaParam2().getName());
+        increaseIndentation();
+        visit(reduceExpr.getBase());
+        visit(reduceExpr.getSequence());
+        visit(reduceExpr.getLambda());
+        decreaseIndentation();
+        print(")");
+        return null;
     }
 
 
