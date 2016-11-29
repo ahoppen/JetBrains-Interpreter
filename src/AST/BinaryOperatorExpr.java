@@ -12,7 +12,27 @@ public class BinaryOperatorExpr extends Expr {
         SUB,
         MULT,
         DIV,
-        POW
+        POW;
+
+        /**
+         * Returns the precedence of the operator between 1 and 3. A greater value means higher
+         * precedence
+         * @return The precedence of this operator
+         */
+        public int getPrecedence() {
+            switch (this) {
+                case ADD:
+                case SUB:
+                    return 1;
+                case MULT:
+                case DIV:
+                    return 2;
+                case POW:
+                    return 3;
+                default:
+                    throw new RuntimeException("Unknown operator: " + this);
+            }
+        }
     }
 
     @NotNull private final Expr lhs;

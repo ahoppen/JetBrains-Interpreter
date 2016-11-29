@@ -15,6 +15,7 @@ public class Parser {
     @NotNull private final Lexer lexer;
     @NotNull private final ASTConsumer consumer;
     @Nullable private final ErrorsVerifier verifier;
+    @Nullable private Token peekedToken;
 
     public Parser(@NotNull Reader inputReader, @NotNull ASTConsumer consumer) {
         this(inputReader, consumer, null);
@@ -43,7 +44,7 @@ public class Parser {
     @Nullable
     private Stmt parseStmt() {
         while (true) {
-            Token token = nextToken();
+            Token token = consumeToken();
             if (token.getKind() == Token.Kind.EOF) {
                 return null;
             }
@@ -76,7 +77,7 @@ public class Parser {
     }
 
     private Identifier parseIdentifier(String diag) {
-        Token nextToken = nextToken();
+        Token nextToken = consumeToken();
         if (nextToken.getKind() != Token.Kind.IDENTIFIER) {
             Diagnostics.error(nextToken, diag, nextToken.toSourceString());
             return null;
@@ -99,7 +100,7 @@ public class Parser {
         }
 
         // Parse '='
-        Token nextToken = nextToken();
+        Token nextToken = consumeToken();
         if (nextToken.getKind() != Token.Kind.ASSIGN) {
             Diagnostics.error(nextToken, Diag.expected_equal_sign_in_assignment,
                     nextToken.toSourceString());
@@ -116,6 +117,23 @@ public class Parser {
         return new AssignStmt(ident, expr);
     }
 
+    private BinaryOperatorExpr.Operator getOperatorForToken(Token token) {
+        switch (token.getKind()) {
+            case ADD:
+                return BinaryOperatorExpr.Operator.ADD;
+            case SUB:
+                return BinaryOperatorExpr.Operator.SUB;
+            case MULT:
+                return BinaryOperatorExpr.Operator.MULT;
+            case DIV:
+                return BinaryOperatorExpr.Operator.DIV;
+            case POW:
+                return BinaryOperatorExpr.Operator.POW;
+            default:
+                throw new RuntimeException(token + " is no operator");
+        }
+    }
+
     /**
      * expr ::= expr op expr | '(' expr ')' | identifier | '{' expr ',' expr '}' | numberLiteral |
      *          'map' map |
@@ -125,21 +143,62 @@ public class Parser {
      */
     @Nullable
     private Expr parseExpr() {
-        Token nextToken = nextToken();
+        return parseExprImpl(0);
+    }
+
+    private Expr parseExprImpl(int precedenceHigherThan) {
+        Expr workingExpr = null;
+        while (true) {
+            Token nextToken = peekToken();
+            if (workingExpr == null) {
+                workingExpr = parseBaseExpr();
+                if (workingExpr == null) {
+                    return null;
+                }
+            } else {
+                if (nextToken.isOperator()) {
+                    BinaryOperatorExpr.Operator operator = getOperatorForToken(nextToken);
+                    if (operator.getPrecedence() <= precedenceHigherThan) {
+                        break;
+                    }
+                    consumeToken();
+                    Expr rhs = parseExprImpl(operator.getPrecedence());
+                    if (rhs == null) {
+                        return null;
+                    }
+                    workingExpr = new BinaryOperatorExpr(workingExpr, operator, rhs);
+                } else {
+                    break;
+                }
+            }
+        }
+        return workingExpr;
+    }
+
+    /**
+     * Parses an expression without any binary operators. Returns the parsed expression or
+     * <code>null</code> if parsing failed
+     * @return A base expression or <code>null</code> if parsing failed
+     */
+    private Expr parseBaseExpr() {
+        Token nextToken = peekToken();
         switch (nextToken.getKind()) {
             case INT_LITERAL: {
+                consumeToken();
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 int value = Integer.parseInt(nextToken.getPayload());
                 return new IntLiteralExpr(value);
             }
             case FLOAT_LITERAL: {
+                consumeToken();
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 double value = Double.parseDouble(nextToken.getPayload());
                 return new FloatLiteralExpr(value);
             }
             case L_PAREN: {
+                consumeToken();
                 Expr subExpr = parseExpr();
                 if (subExpr == null) {
                     return null;
@@ -150,6 +209,7 @@ public class Parser {
                 return new ParenExpr(subExpr);
             }
             case L_BRACE: {
+                consumeToken();
                 Expr lowerBound = parseExpr();
                 if (lowerBound == null) {
                     return null;
@@ -167,6 +227,7 @@ public class Parser {
                 return new RangeExpr(lowerBound, upperBound);
             }
             case IDENTIFIER: {
+                consumeToken();
                 assert nextToken.getPayload() != null;
                 switch (nextToken.getPayload()) {
                     case "map":
@@ -174,10 +235,12 @@ public class Parser {
                     case "reduce":
                         return parseReduceExpr();
                     default:
-                        return new IdentifierRefExpr(new Identifier(nextToken.getPayload()));
+                        Identifier identifier = new Identifier(nextToken.getPayload());
+                        return new IdentifierRefExpr(identifier);
                 }
             }
             default: {
+                consumeToken();
                 Diagnostics.error(nextToken, Diag.invalid_start_of_expr,
                         nextToken.toSourceString());
                 return null;
@@ -293,7 +356,7 @@ public class Parser {
      * @return <code>true</code> if the specified token was seen, <code>false</code> otherwise
      */
     private boolean consumeToken(Token.Kind kind, String diag) {
-        Token nextToken = nextToken();
+        Token nextToken = consumeToken();
         if (nextToken.getKind() != kind) {
             Diagnostics.error(nextToken, diag, nextToken.toSourceString());
             return false;
@@ -308,14 +371,29 @@ public class Parser {
      * @return The next non-comment token in the source code
      */
     @NotNull
-    private Token nextToken() {
-        Token nextToken;
-        do {
-            nextToken = lexer.nextToken();
-            if (verifier != null) {
-                verifier.addPotentialExpectedError(nextToken);
-            }
-        } while (nextToken.getKind() == Token.Kind.COMMENT);
-        return nextToken;
+    private Token consumeToken() {
+        if (peekedToken != null) {
+            Token nextToken = peekedToken;
+            peekedToken = null;
+            return nextToken;
+        } else {
+            Token nextToken;
+            do {
+                nextToken = lexer.nextToken();
+                if (verifier != null) {
+                    verifier.addPotentialExpectedError(nextToken);
+                }
+            } while (nextToken.getKind() == Token.Kind.COMMENT);
+            return nextToken;
+        }
+    }
+
+    private Token peekToken() {
+        if (peekedToken != null) {
+            return peekedToken;
+        } else {
+            peekedToken = consumeToken();
+            return peekedToken;
+        }
     }
 }

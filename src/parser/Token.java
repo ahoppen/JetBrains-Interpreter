@@ -2,6 +2,7 @@ package parser;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.omg.CORBA.PUBLIC_MEMBER;
 import utils.SourceLoc;
 
 public class Token {
@@ -55,6 +56,19 @@ public class Token {
     @NotNull
     public SourceLoc getLocation() {
         return location;
+    }
+
+    public boolean isOperator() {
+        switch (this.getKind()) {
+            case ADD:
+            case SUB:
+            case MULT:
+            case DIV:
+            case POW:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override

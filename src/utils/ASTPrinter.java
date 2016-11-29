@@ -101,7 +101,9 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
     @Override
     public Void visitParenExpr(ParenExpr parenExpr) {
         print("(parenExpr");
+        increaseIndentation();
         visit(parenExpr.getSubExpr());
+        decreaseIndentation();
         print(")");
         return null;
     }
