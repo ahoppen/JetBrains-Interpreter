@@ -13,7 +13,7 @@ public class Lexer {
 
     @NotNull private final Scanner scanner;
 
-    public Lexer(Reader inputReader) {
+    public Lexer(@NotNull Reader inputReader) {
         scanner = new Scanner(inputReader);
     }
 

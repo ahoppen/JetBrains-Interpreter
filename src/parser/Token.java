@@ -64,4 +64,55 @@ public class Token {
             return kind.toString();
         }
     }
+
+    /**
+     * @return A string that is usually used to represent this token in the source code
+     */
+    @NotNull
+    public String toSourceString() {
+        switch (getKind()) {
+            case IDENTIFIER:
+                assert getPayload() != null;
+                return getPayload();
+            case ADD:
+                return "+";
+            case SUB:
+                return "-";
+            case MULT:
+                return "*";
+            case DIV:
+                return "/";
+            case POW:
+                return "^";
+            case L_PAREN:
+                return "(";
+            case R_PAREN:
+                return ")";
+            case L_BRACE:
+                return "{";
+            case R_BRACE:
+                return "}";
+            case INT_LITERAL:
+                assert getPayload() != null;
+                return getPayload();
+            case FLOAT_LITERAL:
+                assert getPayload() != null;
+                return getPayload();
+            case ARROW:
+                return "->";
+            case COMMA:
+                return ",";
+            case STRING_LITERAL:
+                return "\"" + getPayload() + "\"";
+            case ASSIGN:
+                return "=";
+            case ERROR:
+                return "<error>";
+            case COMMENT:
+                assert getPayload() != null;
+                return getPayload();
+            default:
+                throw new RuntimeException("Unknown token kind: " + getKind());
+        }
+    }
 }

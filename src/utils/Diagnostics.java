@@ -1,6 +1,7 @@
 package utils;
 
 import org.jetbrains.annotations.NotNull;
+import parser.Token;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +47,10 @@ public class Diagnostics {
     public static void error(@NotNull SourceLoc location, @NotNull String error, Object... args) {
         String errorMessage = String.format(error, args);
         errors.add(new Error(location, errorMessage));
+    }
+
+    public static void error(@NotNull Token token, @NotNull String error, Object... args) {
+        error(token.getLocation(), error, args);
     }
 
     @NotNull

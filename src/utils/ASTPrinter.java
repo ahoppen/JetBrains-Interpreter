@@ -34,7 +34,7 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitAssignStmt(@NotNull AssignStmt assignStmt) {
-        print("(assign var=" + assignStmt.getLhs().getName());
+        print("(assignExpr var=" + assignStmt.getLhs().getName());
         increaseIndentation();
         visit(assignStmt.getRhs());
         decreaseIndentation();
@@ -73,7 +73,7 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitIntLiteralExpr(IntLiteralExpr intLiteralExpr) {
-        print("(floatLiteralExpr value=" + intLiteralExpr.getValue() + ")");
+        print("(intLiteralExpr value=" + intLiteralExpr.getValue() + ")");
         return null;
     }
 
@@ -84,7 +84,7 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitOutStmt(OutStmt outExpr) {
-        print("(out");
+        print("(outExpr");
         increaseIndentation();
         visit(outExpr.getArgument());
         decreaseIndentation();
@@ -102,13 +102,13 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     @Override
     public Void visitPrintStmt(PrintStmt printStmt) {
-        print("(print string=" + printStmt.getArgument() + ")");
+        print("(printExpr string=" + printStmt.getArgument() + ")");
         return null;
     }
 
     @Override
     public Void visitRangeExpr(RangeExpr rangeExpr) {
-        print("(range");
+        print("(rangeExpr");
         increaseIndentation();
         visit(rangeExpr.getLowerBound());
         visit(rangeExpr.getUpperBound());

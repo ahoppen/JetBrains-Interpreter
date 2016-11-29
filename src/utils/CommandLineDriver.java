@@ -1,6 +1,8 @@
 package utils;
 
+import org.jetbrains.annotations.NotNull;
 import parser.Lexer;
+import parser.Parser;
 import parser.Token;
 
 import java.io.File;
@@ -48,34 +50,54 @@ public class CommandLineDriver {
                     token = lexer.nextToken();
                 }
                 if (verify) {
-                    boolean failure = false;
-                    for (Diagnostics.Error error : Diagnostics.getErrors()) {
-                        if (!verifier.matchError(error)) {
-                            System.out.println("Unexpected error seen: " + error.getLocation() +
-                                    ": " + error.getMessage());
-                            failure = true;
-                        }
-                    }
-                    for (Diagnostics.Error error : verifier.getUnseenErrors()) {
-                        failure = true;
-                        System.out.println("Expected error not seen: " + error.getLocation() +
-                                ": " + error.getMessage());
-                    }
-                    if (failure) {
-                        System.exit(1);
-                    } else {
-                        System.exit(0);
-                    }
+                    verifyErrors(verifier);
                 } else {
-                    for (Diagnostics.Error error : Diagnostics.getErrors()) {
-                        System.out.println(error.getLocation() + ": " + error.getMessage());
-                    }
+                    printErrors();
+                }
+                break;
+            }
+            case "-parse": {
+                ASTPrinter printer = new ASTPrinter();
+                ErrorsVerifier verifier = new ErrorsVerifier();
+                Parser parser = new Parser(reader, printer, verifier);
+                parser.parse();
+                if (verify) {
+                    verifyErrors(verifier);
+                } else {
+                    printErrors();
                 }
                 break;
             }
             default:
                 printUsage();
                 System.exit(1);
+        }
+    }
+
+    private static void verifyErrors(@NotNull ErrorsVerifier verifier) {
+        boolean failure = false;
+        for (Diagnostics.Error error : Diagnostics.getErrors()) {
+            if (!verifier.matchError(error)) {
+                System.err.println("Unexpected error seen: " + error.getLocation() +
+                        ": " + error.getMessage());
+                failure = true;
+            }
+        }
+        for (Diagnostics.Error error : verifier.getUnseenErrors()) {
+            failure = true;
+            System.err.println("Expected error not seen: " + error.getLocation() +
+                    ": " + error.getMessage());
+        }
+        if (failure) {
+            System.exit(1);
+        } else {
+            System.exit(0);
+        }
+    }
+
+    private static void printErrors() {
+        for (Diagnostics.Error error : Diagnostics.getErrors()) {
+            System.out.println(error.getLocation() + ": " + error.getMessage());
         }
     }
 

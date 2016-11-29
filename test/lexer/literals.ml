@@ -1,4 +1,4 @@
-# RUN: %lexerVerify
+# RUN: %verifyLexer
 
 var a = 1.2.3 # expectedError@12: A number literal can only contain one '.'
 
