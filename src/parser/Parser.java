@@ -48,7 +48,7 @@ public class Parser {
             if (token.getKind() == Token.Kind.IDENTIFIER) {
                 assert token.getPayload() != null;
                 switch (token.getPayload()) {
-                    case "var":
+                    case "var": {
                         AssignStmt assignmentStmt = parseAssignment(token.getLocation());
                         if (assignmentStmt != null) {
                             return assignmentStmt;
@@ -56,13 +56,27 @@ public class Parser {
                             // Error has already been reported. Just try parsing a new statement
                             break;
                         }
-                    case "out":
+                    }
+                    case "out": {
                         Expr expr = parseExpr();
                         if (expr != null) {
                             return new OutStmt(token.getLocation(), expr);
                         } else {
                             break;
                         }
+                    }
+                    case "print": {
+                        Token stringToken = peekToken();
+                        if (stringToken.getKind() != Token.Kind.STRING_LITERAL) {
+                            Diagnostics.error(stringToken, Diag.no_string_literal_after_print,
+                                    stringToken);
+                            break;
+                        }
+                        // Consume the string token
+                        consumeToken();
+                        assert stringToken.getPayload() != null;
+                        return new PrintStmt(token.getLocation(), stringToken.getPayload());
+                    }
                     default:
                         Diagnostics.error(token, Diag.unexpected_start_of_stmt,
                                 token.toSourceString());
