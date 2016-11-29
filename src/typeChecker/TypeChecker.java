@@ -85,6 +85,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         }
 
         identifierRefExpr.setType(variable.getType());
+        identifierRefExpr.setReferencedVariable(variable);
         return true;
     }
 
