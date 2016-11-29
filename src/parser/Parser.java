@@ -58,6 +58,13 @@ public class Parser {
                             // Error has already been reported. Just try parsing a new statement
                             break;
                         }
+                    case "out":
+                        Expr expr = parseExpr(token);
+                        if (expr != null) {
+                            return new OutStmt(expr);
+                        } else {
+                            break;
+                        }
                     default:
                         Diagnostics.error(token, Diag.unexpected_start_of_stmt,
                                 token.toSourceString());

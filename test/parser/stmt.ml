@@ -11,3 +11,8 @@ var x = 1
 var 1 # expectedError@5: Expected an identifier after 'var' but found '1'
 
 var x 1 # expectedError@7: Expected a '=' in an assignment statement but found '1'
+
+out 1
+# CHECK: (outExpr
+# CHECK:   (intLiteralExpr value=1)
+# CHECK: )
