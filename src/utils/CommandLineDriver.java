@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import parser.Lexer;
 import parser.Parser;
 import parser.Token;
+import typeChecker.TypeChecker;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -62,6 +63,19 @@ public class CommandLineDriver {
                 ASTPrinter printer = new ASTPrinter();
                 ErrorsVerifier verifier = new ErrorsVerifier();
                 Parser parser = new Parser(reader, printer, verifier);
+                parser.parse();
+                if (verify) {
+                    verifyErrors(verifier);
+                } else {
+                    printErrors();
+                }
+                break;
+            }
+            case "-typeCheck": {
+                ASTPrinter printer = new ASTPrinter();
+                TypeChecker typeChecker = new TypeChecker(printer);
+                ErrorsVerifier verifier = new ErrorsVerifier();
+                Parser parser = new Parser(reader, typeChecker, verifier);
                 parser.parse();
                 if (verify) {
                     verifyErrors(verifier);

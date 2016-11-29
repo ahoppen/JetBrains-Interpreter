@@ -34,4 +34,17 @@ public abstract class Diag {
     public static final String l_paren_expected = "Expected '(' but found '%s'";
     public static final String r_paren_expected = "Expected ')' but found '%s'";
     public static final String r_brace_expected = "Expected '}' but found '%s'";
+
+    // ==========================
+    // Type checker
+    // ==========================
+
+    public static final String variable_already_declared = "Variable '%s' has already been declared";
+    public static final String undeclared_variable = "Variable '%s' referenced before declaration";
+    public static final String arithmetic_operator_on_non_number = "Arithmetic operator '%s' can only be used on number types and not on '%s' and '%s'";
+    public static final String argument_of_map_not_sequence = "Argument for 'map' must be a sequence, '%s' given";
+    public static final String argument_of_reduce_not_sequence = "First argument for 'reduce' must be a sequence, '%s' given";
+    public static final String lambda_of_reduce_does_not_return_base_type = "The lambda of 'reduce' must return the same type as the base element ('%s'). Got '%s'";
+    public static final String lower_bound_of_range_not_int = "Lower bound of a range must be an integer and not '%s'";
+    public static final String upper_bound_of_range_not_int = "Upper bound of a range must be an integer and not '%s'";
 }

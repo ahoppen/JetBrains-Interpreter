@@ -1,5 +1,6 @@
 package utils;
 
+import AST.ASTNode;
 import org.jetbrains.annotations.NotNull;
 import parser.Token;
 
@@ -51,6 +52,10 @@ public class Diagnostics {
 
     public static void error(@NotNull Token token, @NotNull String error, Object... args) {
         error(token.getLocation(), error, args);
+    }
+
+    public static void error(@NotNull ASTNode astNode, @NotNull String error, Object... args) {
+        error(astNode.getLocation(), error, args);
     }
 
     @NotNull
