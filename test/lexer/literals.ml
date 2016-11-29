@@ -1,6 +1,17 @@
-# RUN: %verifyLexer
+# RUN: %checkLexer
 
 var a = 1.2.3 # expectedError@12: A number literal can only contain one '.'
+
+var b = -1
+# CHECK: IDENTIFIER(b)
+# CHECK: ASSIGN
+# CHECK: INT_LITERAL(-1)
+
+var c = -1.2
+# CHECK: FLOAT_LITERAL(-1.2)
+
+var d = -.2
+# CHECK: FLOAT_LITERAL(-.2)
 
 print "blah\xblub" # expectedError@13: Unknown escape sequence '\x'
 

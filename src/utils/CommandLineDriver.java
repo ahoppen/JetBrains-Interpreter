@@ -43,7 +43,9 @@ public class CommandLineDriver {
                 Token token = lexer.nextToken();
                 ErrorsVerifier verifier = new ErrorsVerifier();
                 while (token != null) {
-                    System.out.println(token);
+                    if (token.getKind() != Token.Kind.COMMENT) {
+                        System.out.println(token);
+                    }
                     if (verify) {
                         verifier.addPotentialExpectedError(token);
                     }

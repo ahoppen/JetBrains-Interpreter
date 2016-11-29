@@ -37,7 +37,7 @@ public class Lexer {
                     return lexIdentifier();
                 case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
                 case '8': case '9': case '.':
-                    return lexNumberLiteral();
+                    return lexNumberLiteral(false);
                 case '"':
                     return lexStringLiteral();
                 case '(':
@@ -53,10 +53,15 @@ public class Lexer {
                 case '-': {
                     SourceLoc location = scanner.getCurrentSourceLoc();
                     scanner.consume();
-                    if (scanner.consumeIf('>')) {
-                        return new Token(Token.Kind.ARROW, location);
-                    } else {
-                        return new Token(Token.Kind.SUB, location);
+                    switch (scanner.peek()) {
+                        case '>':
+                            scanner.consume();
+                            return new Token(Token.Kind.ARROW, location);
+                        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+                        case '8': case '9': case '.':
+                            return lexNumberLiteral(true);
+                        default:
+                            return new Token(Token.Kind.SUB, location);
                     }
                 }
                 case '*':
@@ -126,9 +131,12 @@ public class Lexer {
         return new Token(Token.Kind.IDENTIFIER, identifierName.toString(), location);
     }
 
-    private Token lexNumberLiteral() {
+    private Token lexNumberLiteral(boolean negative) {
         SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder numberString = new StringBuilder();
+        if (negative) {
+            numberString.append("-");
+        }
         Token.Kind kind = Token.Kind.INT_LITERAL;
         try {
             characterConsumption: while (true) {
