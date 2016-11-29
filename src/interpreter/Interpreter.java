@@ -57,12 +57,23 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                 case MULT:
                     value = ((IntValue)lhs).getValue() * ((IntValue)rhs).getValue();
                     break;
-                case DIV:
-                    value = ((IntValue)lhs).getValue() / ((IntValue)rhs).getValue();
-                    break;
-                case POW:
-                    value = (int)Math.pow(((IntValue)lhs).getValue(), ((IntValue)rhs).getValue());
-                    break;
+                case DIV: {
+                    double doubleValue = (double)((IntValue)lhs).getValue() /
+                            ((IntValue)rhs).getValue();
+                    return new FloatValue(doubleValue);
+                }
+                case POW: {
+                    int base = ((IntValue)lhs).getValue();
+                    int exponent = ((IntValue)rhs).getValue();
+                    if (exponent >= 0) {
+                        // Exponentiation results in an integer
+                        value = (int)Math.pow(base, exponent);
+                        break;
+                    } else {
+                        double doubleValue = Math.pow(base, exponent);
+                        return new FloatValue(doubleValue);
+                    }
+                }
                 default:
                     throw new RuntimeException("Unknown operator: " + binOpExpr.getOp());
             }
@@ -204,7 +215,16 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         if (lowerBoundValue instanceof ErrorValue || upperBoundValue instanceof ErrorValue) {
             return ErrorValue.get();
         }
-        // The type checker guarantees now that the lower and upper bound are IntValues
+        if (!(lowerBoundValue instanceof IntValue)) {
+            Diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
+                    rangeExpr.getLowerBound().getType());
+            return ErrorValue.get();
+        }
+        if (!(upperBoundValue instanceof IntValue)) {
+            Diagnostics.error(rangeExpr.getUpperBound(), Diag.lower_bound_of_range_not_int,
+                    rangeExpr.getUpperBound().getType());
+            return ErrorValue.get();
+        }
         int lowerBound = ((IntValue)lowerBoundValue).getValue();
         int upperBound = ((IntValue)upperBoundValue).getValue();
 

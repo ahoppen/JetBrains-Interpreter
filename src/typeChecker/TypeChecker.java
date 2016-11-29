@@ -1,8 +1,7 @@
 package typeChecker;
 
 import AST.*;
-import AST.Type.FloatType;
-import AST.Type.IntType;
+import AST.Type.NumberType;
 import AST.Type.SequenceType;
 import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
@@ -53,25 +52,20 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         }
         Type lhsType = binOpExpr.getLhs().getType();
         Type rhsType = binOpExpr.getRhs().getType();
-        if (!(lhsType instanceof IntType || lhsType instanceof FloatType) ||
-                !(rhsType instanceof IntType || rhsType instanceof FloatType)) {
+        if (!(lhsType instanceof NumberType) ||
+                !(rhsType instanceof NumberType)) {
             Diagnostics.error(binOpExpr, Diag.arithmetic_operator_on_non_number,
                     binOpExpr.getOp().toSourceString(), lhsType, rhsType);
             return false;
         }
 
-        if (lhsType instanceof FloatType || rhsType instanceof FloatType) {
-            binOpExpr.setType(FloatType.get());
-            return true;
-        } else {
-            binOpExpr.setType(IntType.get());
-            return true;
-        }
+        binOpExpr.setType(NumberType.get());
+        return true;
     }
 
     @Override
     public Boolean visitFloatLiteralExpr(FloatLiteralExpr floatLiteralExpr) {
-        floatLiteralExpr.setType(FloatType.get());
+        floatLiteralExpr.setType(NumberType.get());
         return true;
     }
 
@@ -91,7 +85,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
     @Override
     public Boolean visitIntLiteralExpr(IntLiteralExpr intLiteralExpr) {
-        intLiteralExpr.setType(IntType.get());
+        intLiteralExpr.setType(NumberType.get());
         return true;
     }
 
@@ -111,12 +105,14 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         variableScope = new VariableScope(variableScope);
         variableScope.declareVariable(mapExpr.getLambdaParam());
 
-        if (!typeCheck(mapExpr.getLambda())) {
-            return false;
-        }
+        boolean lambdaTypeCheckError = !typeCheck(mapExpr.getLambda());
 
         assert variableScope.getOuterScope() != null;
         variableScope = variableScope.getOuterScope();
+
+        if (lambdaTypeCheckError) {
+            return false;
+        }
 
         mapExpr.setType(new SequenceType(mapExpr.getLambda().getType()));
         return true;
@@ -147,17 +143,17 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         if (!typeCheck(rangeExpr.getLowerBound()) || !typeCheck(rangeExpr.getUpperBound())) {
             return false;
         }
-        if (!(rangeExpr.getLowerBound().getType() instanceof IntType)) {
+        if (!(rangeExpr.getLowerBound().getType() instanceof NumberType)) {
             Diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
                     rangeExpr.getLowerBound().getType());
             return false;
         }
-        if (!(rangeExpr.getUpperBound().getType() instanceof IntType)) {
+        if (!(rangeExpr.getUpperBound().getType() instanceof NumberType)) {
             Diagnostics.error(rangeExpr.getUpperBound(), Diag.upper_bound_of_range_not_int,
                     rangeExpr.getUpperBound().getType());
             return false;
         }
-        rangeExpr.setType(new SequenceType(IntType.get()));
+        rangeExpr.setType(new SequenceType(NumberType.get()));
         return true;
     }
 
@@ -181,19 +177,21 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         variableScope.declareVariable(reduceExpr.getLambdaParam1());
         variableScope.declareVariable(reduceExpr.getLambdaParam2());
 
-        if (!typeCheck(reduceExpr.getLambda())) {
-            return false;
-        }
+        boolean lambdaTypeCheckError = !typeCheck(reduceExpr.getLambda());
 
         if (!reduceExpr.getLambda().getType().equals(baseType)) {
             Diagnostics.error(reduceExpr.getLambda(),
                     Diag.lambda_of_reduce_does_not_return_base_type, baseType,
                     reduceExpr.getLambda().getType());
-            return false;
+            lambdaTypeCheckError = true;
         }
 
         assert variableScope.getOuterScope() != null;
         variableScope = variableScope.getOuterScope();
+
+        if (lambdaTypeCheckError) {
+            return false;
+        }
 
         reduceExpr.setType(baseType);
         return true;
