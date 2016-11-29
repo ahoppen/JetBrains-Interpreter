@@ -18,6 +18,7 @@ public abstract class Diag {
 
     // Statements
     public static final String unexpected_start_of_stmt = "Unexpected start of statements. Statements must start with 'var', 'out' or 'print' but found '%s'";
+    public static final String no_string_literal_after_print = "Expected a string literal after 'print' but got '%s'";
 
     // Assign statement
     public static final String expected_ident_after_var = "Expected an identifier after 'var' but found '%s'";
@@ -47,4 +48,10 @@ public abstract class Diag {
     public static final String lambda_of_reduce_does_not_return_base_type = "The lambda of 'reduce' must return the same type as the base element ('%s'). Got '%s'";
     public static final String lower_bound_of_range_not_int = "Lower bound of a range must be an integer and not '%s'";
     public static final String upper_bound_of_range_not_int = "Upper bound of a range must be an integer and not '%s'";
+
+    // ==========================
+    // Runtime
+    // ==========================
+
+    public static final String range_upper_bound_smaller_than_lower_bound = "Upper bound of range cannot be smaller than the lower bound";
 }

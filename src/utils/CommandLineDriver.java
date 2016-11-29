@@ -1,5 +1,7 @@
 package utils;
 
+import interpreter.Interpreter;
+import interpreter.Value;
 import org.jetbrains.annotations.NotNull;
 import parser.Lexer;
 import parser.Parser;
@@ -53,7 +55,7 @@ public class CommandLineDriver {
                     token = lexer.nextToken();
                 }
                 if (verify) {
-                    verifyErrors(verifier);
+                    System.exit(verifyErrors(verifier) ? 0 : 1);
                 } else {
                     printErrors();
                 }
@@ -65,7 +67,11 @@ public class CommandLineDriver {
                 Parser parser = new Parser(reader, printer, verifier);
                 parser.parse();
                 if (verify) {
-                    verifyErrors(verifier);
+                    if (verifyErrors(verifier)) {
+                        System.exit(0);
+                    } else {
+                        System.exit(1);
+                    }
                 } else {
                     printErrors();
                 }
@@ -78,10 +84,28 @@ public class CommandLineDriver {
                 Parser parser = new Parser(reader, typeChecker, verifier);
                 parser.parse();
                 if (verify) {
-                    verifyErrors(verifier);
+                    System.exit(verifyErrors(verifier) ? 0 : 1);
                 } else {
                     printErrors();
                 }
+                break;
+            }
+            case "-evaluate": {
+                Interpreter interpreter = new Interpreter();
+                TypeChecker typeChecker = new TypeChecker(interpreter);
+                ErrorsVerifier verifier = new ErrorsVerifier();
+                Parser parser = new Parser(reader, typeChecker, verifier);
+                parser.parse();
+                boolean failure = false;
+                if (verify) {
+                    failure = verifyErrors(verifier);
+                } else {
+                    printErrors();
+                }
+                for (Value value : interpreter.getOutput().values()) {
+                    System.out.print(value);
+                }
+                System.exit(failure ? 0 : 1);
                 break;
             }
             default:
@@ -90,7 +114,7 @@ public class CommandLineDriver {
         }
     }
 
-    private static void verifyErrors(@NotNull ErrorsVerifier verifier) {
+    private static boolean verifyErrors(@NotNull ErrorsVerifier verifier) {
         boolean failure = false;
         for (Diagnostics.Error error : Diagnostics.getErrors()) {
             if (!verifier.matchError(error)) {
@@ -104,11 +128,7 @@ public class CommandLineDriver {
             System.err.println("Expected error not seen: " + error.getLocation() +
                     ": " + error.getMessage());
         }
-        if (failure) {
-            System.exit(1);
-        } else {
-            System.exit(0);
-        }
+        return !failure;
     }
 
     private static void printErrors() {
