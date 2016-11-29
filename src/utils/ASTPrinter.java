@@ -54,6 +54,12 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
     }
 
     @Override
+    public Void visitErrorExpr(ErrorExpr errorExpr) {
+        print("(errorExpr)");
+        return null;
+    }
+
+    @Override
     public Void visitFloatLiteralExpr(FloatLiteralExpr floatLiteralExpr) {
         print("(floatLiteralExpr value=" + floatLiteralExpr.getValue() + ")");
         return null;
@@ -115,4 +121,6 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
     public Void visitReduceExpr(ReduceExpr reduceExpr) {
         throw new RuntimeException("Not yet implemented!");
     }
+
+
 }

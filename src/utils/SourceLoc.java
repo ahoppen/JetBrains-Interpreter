@@ -17,4 +17,23 @@ public class SourceLoc {
     public int getColumn() {
         return column;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof SourceLoc)) {
+            return false;
+        }
+        SourceLoc other = ((SourceLoc)obj);
+        return other.line == line && other.column == column;
+    }
+
+    @Override
+    public int hashCode() {
+        return line * 10000 + column;
+    }
+
+    @Override
+    public String toString() {
+        return line + ":" + column;
+    }
 }

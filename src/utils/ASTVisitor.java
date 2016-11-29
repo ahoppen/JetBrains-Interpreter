@@ -6,6 +6,7 @@ public interface ASTVisitor<T> {
 
     T visitAssignStmt(AssignStmt assignStmt);
     T visitBinaryOperatorExpr(BinaryOperatorExpr binOpExpr);
+    T visitErrorExpr(ErrorExpr errorExpr);
     T visitFloatLiteralExpr(FloatLiteralExpr floatLiteralExpr);
     T visitIdentifierRefExpr(IdentifierRefExpr identifierRefExpr);
     T visitIntLiteralExpr(IntLiteralExpr intLiteralExpr);

@@ -2,6 +2,9 @@ package parser;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import utils.Diag;
+import utils.Diagnostics;
+import utils.SourceLoc;
 
 import java.io.EOFException;
 import java.io.Reader;
@@ -17,23 +20,9 @@ public class Lexer {
     @Nullable
     public Token nextToken() {
         try {
-            boolean nothingConsumed;
-            do {
-                nothingConsumed = true;
-                // Consume comments and whitespace
-                while (Character.isWhitespace(scanner.peek())) {
-                    scanner.consume();
-                    nothingConsumed = false;
-                }
-
-                if (scanner.peek() == '#') {
-                    nothingConsumed = false;
-                    char nextChar = scanner.consume();
-                    while (nextChar != '\n' && nextChar != '\r') {
-                        nextChar = scanner.consume();
-                    }
-                }
-            } while (!nothingConsumed);
+            while (Character.isWhitespace(scanner.peek())) {
+                scanner.consume();
+            }
 
             switch (scanner.peek()) {
                 case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H':
@@ -52,52 +41,64 @@ public class Lexer {
                 case '"':
                     return lexStringLiteral();
                 case '(':
-                    scanner.consume();
-                    return new Token(Token.Kind.L_PAREN);
+                    return createSingeCharToken(Token.Kind.L_PAREN);
                 case ')':
-                    scanner.consume();
-                    return new Token(Token.Kind.R_PAREN);
+                    return createSingeCharToken(Token.Kind.R_PAREN);
                 case '{':
-                    scanner.consume();
-                    return new Token(Token.Kind.L_BRACE);
+                    return createSingeCharToken(Token.Kind.L_BRACE);
                 case '}':
-                    scanner.consume();
-                    return new Token(Token.Kind.R_BRACE);
+                    return createSingeCharToken(Token.Kind.R_BRACE);
                 case '+':
-                    scanner.consume();
-                    return new Token(Token.Kind.ADD);
-                case '-':
+                    return createSingeCharToken(Token.Kind.ADD);
+                case '-': {
+                    SourceLoc location = scanner.getCurrentSourceLoc();
                     scanner.consume();
                     if (scanner.consumeIf('>')) {
-                        return new Token(Token.Kind.ARROW);
+                        return new Token(Token.Kind.ARROW, location);
                     } else {
-                        return new Token(Token.Kind.SUB);
+                        return new Token(Token.Kind.SUB, location);
                     }
+                }
                 case '*':
-                    scanner.consume();
-                    return new Token(Token.Kind.MULT);
+                    return createSingeCharToken(Token.Kind.MULT);
                 case '/':
-                    scanner.consume();
-                    return new Token(Token.Kind.DIV);
+                    return createSingeCharToken(Token.Kind.DIV);
                 case '^':
-                    scanner.consume();
-                    return new Token(Token.Kind.POW);
+                    return createSingeCharToken(Token.Kind.POW);
                 case ',':
-                    scanner.consume();
-                    return new Token(Token.Kind.COMMA);
+                    return createSingeCharToken(Token.Kind.COMMA);
                 case '=':
-                    scanner.consume();
-                    return new Token(Token.Kind.ASSIGN);
+                    return createSingeCharToken(Token.Kind.ASSIGN);
+                case '#': {
+                    SourceLoc location = scanner.getCurrentSourceLoc();
+                    StringBuilder comment = new StringBuilder();
+                    try {
+                        char nextChar = scanner.consume();
+                        while (nextChar != '\n' && nextChar != '\r') {
+                            comment.append(nextChar);
+                            nextChar = scanner.consume();
+                        }
+                    } catch (EOFException ignored) {}
+                    return new Token(Token.Kind.COMMENT, comment.toString(), location);
+                }
                 default:
-                    // FIXME: Handle invalid characters properly
-                    throw new RuntimeException("Unknown character: '" + scanner.peek() + "'");
+                    Diagnostics.error(scanner.getCurrentSourceLoc(), Diag.invalid_character,
+                            scanner.peek());
+                    return createSingeCharToken(Token.Kind.ERROR);
             }
         } catch (EOFException e) {
             return null;
         }
     }
 
+    private Token createSingeCharToken(Token.Kind kind) throws EOFException {
+        SourceLoc location = scanner.getCurrentSourceLoc();
+        scanner.consume();
+        return new Token(kind, location);
+    }
+
     private Token lexIdentifier() {
+        SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder identifierName = new StringBuilder();
         try {
             characterConsumption: while (true) {
@@ -122,10 +123,11 @@ public class Lexer {
         } catch (EOFException ignored) {
         }
 
-        return new Token(Token.Kind.IDENTIFIER, identifierName.toString());
+        return new Token(Token.Kind.IDENTIFIER, identifierName.toString(), location);
     }
 
     private Token lexNumberLiteral() {
+        SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder numberString = new StringBuilder();
         Token.Kind kind = Token.Kind.INT_LITERAL;
         try {
@@ -141,8 +143,10 @@ public class Lexer {
                             numberString.append(scanner.consume());
                             break;
                         } else {
-                            // FIXME: Handle two dots in one number properly
-                            throw new RuntimeException("Saw two dots in one number literal");
+                            Diagnostics.error(scanner.getCurrentSourceLoc(),
+                                    Diag.two_dots_in_number_literal);
+                            scanner.consumeCharactersInString("0123456789.");
+                            return new Token(Token.Kind.ERROR, location);
                         }
                     default:
                         break characterConsumption;
@@ -150,15 +154,16 @@ public class Lexer {
             }
         } catch (EOFException ignored) {
         }
-        return new Token(kind, numberString.toString());
+        return new Token(kind, numberString.toString(), location);
     }
 
     private Token lexStringLiteral() {
+        SourceLoc location = scanner.getCurrentSourceLoc();
+        StringBuilder sb = new StringBuilder();
         try {
             boolean quotConsumed = scanner.consumeIf('"');
             assert quotConsumed : "Haven't we read a quotation mark?";
 
-            StringBuilder sb = new StringBuilder();
             boolean escapedMode = false;
             char c = scanner.consume();
             do {
@@ -167,19 +172,19 @@ public class Lexer {
                     if (escapedCharacter != null) {
                         sb.append(escapedCharacter);
                     } else {
-                        // FIXME: Do proper error diagnostics
-                        throw new RuntimeException("Unknown escape sequence");
+                        Diagnostics.error(scanner.getCurrentSourceLoc(),
+                                Diag.unknown_escape_sequence, c);
                     }
                     escapedMode = false;
                 } else {
                     if (c == '\\') {
                         escapedMode = true;
                     } else if (c == '"') {
-                        return new Token(Token.Kind.STRING_LITERAL, sb.toString());
+                        return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
                     } else {
                         if (c == '\n' || c == '\r') {
-                            // FIXME: Do proper error diagnostics
-                            throw new RuntimeException("String literal terminated by newline");
+                            Diagnostics.error(location, Diag.eol_before_string_terminated);
+                            return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
                         }
                         sb.append(c);
                     }
@@ -188,8 +193,8 @@ public class Lexer {
                 c = scanner.consume();
             } while (true);
         } catch (EOFException e) {
-            // FIXME: Do proper error diagnostics
-            throw new RuntimeException("Reached EOF before string literal terminated");
+            Diagnostics.error(location, Diag.eof_before_string_terminated);
+            return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
         }
     }
 

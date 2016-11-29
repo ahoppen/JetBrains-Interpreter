@@ -2,6 +2,7 @@ package parser;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import utils.SourceLoc;
 
 public class Token {
 
@@ -21,19 +22,23 @@ public class Token {
         ARROW,
         COMMA,
         STRING_LITERAL,
-        ASSIGN
+        ASSIGN,
+        ERROR,
+        COMMENT
     }
 
     @NotNull private final Kind kind;
     @Nullable private final String payload;
+    @NotNull private final SourceLoc location;
 
-    Token(@NotNull Kind kind, @Nullable String payload) {
+    Token(@NotNull Kind kind, @Nullable String payload, @NotNull SourceLoc location) {
         this.kind = kind;
         this.payload = payload;
+        this.location = location;
     }
 
-    Token(Kind kind) {
-        this(kind, null);
+    Token(Kind kind, @NotNull SourceLoc location) {
+        this(kind, null, location);
     }
 
     @NotNull
@@ -44,6 +49,11 @@ public class Token {
     @Nullable
     public String getPayload() {
         return payload;
+    }
+
+    @NotNull
+    public SourceLoc getLocation() {
+        return location;
     }
 
     @Override

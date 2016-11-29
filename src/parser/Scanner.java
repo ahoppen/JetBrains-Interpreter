@@ -4,7 +4,9 @@ import org.jetbrains.annotations.NotNull;
 import utils.SourceLoc;
 
 import java.io.*;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 class Scanner {
 
@@ -61,6 +63,23 @@ class Scanner {
             return true;
         } else {
             return false;
+        }
+    }
+
+    /**
+     * Consider the string as a set and consume characters for as long as they are in this set
+     * @param s The set of characters that should be consumed
+     */
+    void consumeCharactersInString(@NotNull String s) {
+        Set<Character> chars = new HashSet<>();
+        for (char c : s.toCharArray()) {
+            chars.add(c);
+        }
+        try {
+            while (chars.contains(peek())) {
+                consume();
+            }
+        } catch (EOFException ignored) {
         }
     }
 
