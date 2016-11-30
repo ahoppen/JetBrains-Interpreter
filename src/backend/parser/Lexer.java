@@ -215,6 +215,7 @@ public class Lexer {
             assert consumedChar == '"' : "Haven't we read a quotation mark";
 
             boolean escapedMode = false;
+            SourceLoc lastLocation = scanner.getCurrentSourceLoc();
             char c = scanner.consume();
             do {
                 if (escapedMode) {
@@ -224,8 +225,7 @@ public class Lexer {
                         sb.append(escapedCharacter);
                     } else {
                         // The escape sequence wasn't valid, issue an error, skip it and continue
-                        Diagnostics.error(scanner.getCurrentSourceLoc(),
-                                Diag.unknown_escape_sequence, c);
+                        Diagnostics.error(lastLocation, Diag.unknown_escape_sequence, c);
                     }
                     escapedMode = false;
                 } else {
@@ -245,6 +245,7 @@ public class Lexer {
                     }
                 }
 
+                lastLocation = scanner.getCurrentSourceLoc();
                 c = scanner.consume();
             } while (true);
         } catch (EOFException e) {
