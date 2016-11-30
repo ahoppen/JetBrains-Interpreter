@@ -6,10 +6,16 @@ public class SequenceType extends Type {
 
     @NotNull private final Type subType;
 
+    /**
+     * @param subType The type of elements this sequence contains
+     */
     public SequenceType(@NotNull Type subType) {
         this.subType = subType;
     }
 
+    /**
+     * @return The type of elements this sequence contains
+     */
     @NotNull
     public Type getSubType() {
         return subType;

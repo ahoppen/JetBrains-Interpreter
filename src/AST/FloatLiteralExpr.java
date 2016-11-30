@@ -4,6 +4,11 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * floatLiteral ::= (-)? ( ([0-9]+.[0-9]*) | ([0-9]*.[0-9]+) )
+ * </code>
+ */
 public class FloatLiteralExpr extends Expr {
     private final double value;
 

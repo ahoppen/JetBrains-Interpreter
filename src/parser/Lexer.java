@@ -2,8 +2,8 @@ package parser;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import utils.Diag;
-import utils.Diagnostics;
+import errorHandling.Diag;
+import errorHandling.Diagnostics;
 import utils.SourceLoc;
 
 import java.io.EOFException;
@@ -17,6 +17,11 @@ public class Lexer {
         scanner = new Scanner(inputReader);
     }
 
+    /**
+     * The next token in the source code, a token of kind <code>ERROR</code> indicates a lexing
+     * error and of kind <code>EOF</code> represents that the end of the file has been reached
+     * @return The next token in the source code
+     */
     @NotNull
     public Token nextToken() {
         try {
@@ -79,6 +84,8 @@ public class Lexer {
                     StringBuilder comment = new StringBuilder();
                     try {
                         char nextChar = scanner.consume();
+                        // It doesn't matter if we don't consume the newline character(s) since they
+                        // will just be consumed as whitespace in the next iteration
                         while (nextChar != '\n' && nextChar != '\r') {
                             comment.append(nextChar);
                             nextChar = scanner.consume();
@@ -96,12 +103,26 @@ public class Lexer {
         }
     }
 
-    private Token createSingeCharToken(Token.Kind kind) throws EOFException {
+    /**
+     * Consumes the next character from the scanner unconditionally and returns a token of the
+     * specified kind. The token has no payload and its location is just before the consumed
+     * character
+     * @param kind The kind of the token to return
+     * @return A token of the specified kind
+     * @throws EOFException If no character could be consumed from the scanner because the EOF has
+     *                      already been reached
+     */
+    private Token createSingeCharToken(@NotNull Token.Kind kind) throws EOFException {
         SourceLoc location = scanner.getCurrentSourceLoc();
         scanner.consume();
         return new Token(kind, location);
     }
 
+    /**
+     * Lex an identifier token. Assumes that the next character is in [A-Za-z0-9_] otherwise an
+     * assertion error is thrown.
+     * @return The lexed identifier token
+     */
     private Token lexIdentifier() {
         SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder identifierName = new StringBuilder();
@@ -128,9 +149,17 @@ public class Lexer {
         } catch (EOFException ignored) {
         }
 
+        assert identifierName.length() > 0 : "An identifier must contain at least one character";
         return new Token(Token.Kind.IDENTIFIER, identifierName.toString(), location);
     }
 
+    /**
+     * Lex a number (int or float) literal. Assumes that the next character is in [0-9.] otherwise
+     * an assertion failure occurs.
+     * @param negative If the number is preceded by '-' to indicate it's negative
+     * @return The lexed number literal or an error token if the next characters did not form a
+     *         valid number literal (e.g. '.')
+     */
     private Token lexNumberLiteral(boolean negative) {
         SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder numberStringBuilder = new StringBuilder();
@@ -170,20 +199,31 @@ public class Lexer {
         return new Token(kind, numberStringBuilder.toString(), location);
     }
 
+    /**
+     * Lex a string literal, also handling escape sequences. This will do a best effort to always
+     * return a string literal, even if there were errors, e.g. by skipping invalid escape sequences
+     *
+     * This assumes that the next character is a '"' otherwise an assertion failure occurs.
+     *
+     * @return The lexed string literal
+     */
     private Token lexStringLiteral() {
         SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder sb = new StringBuilder();
         try {
-            scanner.consume();
+            char consumedChar = scanner.consume();
+            assert consumedChar == '"' : "Haven't we read a quotation mark";
 
             boolean escapedMode = false;
             char c = scanner.consume();
             do {
                 if (escapedMode) {
+                    // We have read a '\' before. Parse the escaped character
                     Character escapedCharacter = parseEscapedCharacter(c);
                     if (escapedCharacter != null) {
                         sb.append(escapedCharacter);
                     } else {
+                        // The escape sequence wasn't valid, issue an error, skip it and continue
                         Diagnostics.error(scanner.getCurrentSourceLoc(),
                                 Diag.unknown_escape_sequence, c);
                     }
@@ -192,9 +232,12 @@ public class Lexer {
                     if (c == '\\') {
                         escapedMode = true;
                     } else if (c == '"') {
+                        // End of string reached
                         return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
                     } else {
                         if (c == '\n' || c == '\r') {
+                            // Reached end of line, just assume the string is terminated and
+                            // return it
                             Diagnostics.error(location, Diag.eol_before_string_terminated);
                             return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
                         }
@@ -210,6 +253,11 @@ public class Lexer {
         }
     }
 
+    /**
+     * @param c The character that follows '\' forming an escape sequence in a string
+     * @return The character represented by the escape sequence '\' c or <code>null</code> if the
+     * escape sequence was not valid
+     */
     @Nullable
     private Character parseEscapedCharacter(char c) {
         if (c == 't') {

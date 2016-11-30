@@ -4,6 +4,13 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * outStmt ::= 'out' argument
+ * </code>
+ * <p>where <code>argument</code> is an expression</p>
+ * <p>Prints the evaluated value of <code>argument</code></p>
+ */
 public class OutStmt extends Stmt {
     @NotNull
     private final Expr argument;

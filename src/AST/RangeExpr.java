@@ -4,6 +4,18 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * rangeExpr ::= '{' lowerBound ',' upperBound '}'
+ * </code>
+ * <p>
+ * where <code>lowerBound</code> and <code>upperBound</code> are expressions.
+ * </p>
+ * <p>
+ * Creates a closed sequence <code>[lowerBound, upperBound]</code>. Both bounds must be integers. If
+ * <code>upperBound < lowerBound</code> this will result in a runtime error
+ * </p>
+ */
 public class RangeExpr extends Expr {
     @NotNull private final Expr lowerBound;
     @NotNull private final Expr upperBound;

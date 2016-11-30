@@ -4,6 +4,14 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * binOpExpr ::= lhs op rhs
+ * </code>
+ *
+ * <p>where <code>lhs</code> and <code>rhs</code> are expressions and <code>op</code> is
+ * <code>+ | - | * | / | ^</code></p>
+ */
 public class BinaryOperatorExpr extends Expr {
 
     public enum Operator {
@@ -33,6 +41,9 @@ public class BinaryOperatorExpr extends Expr {
             }
         }
 
+        /**
+         * @return The string that is used to represent this operator in the source code
+         */
         public String toSourceString() {
             switch (this) {
                 case ADD:
@@ -55,7 +66,8 @@ public class BinaryOperatorExpr extends Expr {
     @NotNull private final Operator op;
     @NotNull private final Expr rhs;
 
-    public BinaryOperatorExpr(@NotNull SourceLoc location, @NotNull Expr lhs, @NotNull Operator op, @NotNull Expr rhs) {
+    public BinaryOperatorExpr(@NotNull SourceLoc location, @NotNull Expr lhs, @NotNull Operator op,
+                              @NotNull Expr rhs) {
         super(location);
         this.lhs = lhs;
         this.op = op;

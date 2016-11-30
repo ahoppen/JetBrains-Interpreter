@@ -1,7 +1,8 @@
-package utils;
+package errorHandling;
 
 import org.jetbrains.annotations.NotNull;
 import parser.Token;
+import utils.SourceLoc;
 
 import java.util.HashMap;
 import java.util.LinkedList;

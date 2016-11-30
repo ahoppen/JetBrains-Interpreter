@@ -6,7 +6,7 @@ public class StringValue extends Value {
 
     @NotNull private final String value;
 
-    public StringValue(@NotNull String value) {
+    StringValue(@NotNull String value) {
         this.value = value;
     }
 

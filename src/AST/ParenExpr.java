@@ -4,6 +4,12 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * parenExpr ::= '(' subExpr ')'
+ * </code>
+ * <p>Represents an expression that was wrapped in parenthesis in the source code</p>
+ */
 public class ParenExpr extends Expr {
     @NotNull private final Expr subExpr;
 

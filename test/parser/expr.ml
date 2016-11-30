@@ -16,7 +16,7 @@ var d = { 5, 8 }
 # CHECK:   (intLiteralExpr value=8)
 
 var e = c
-# CHECK: (identifierRefExpr identifier=c)
+# CHECK: (variableRefExpr identifier=c)
 
 var f = map({1, 5}, x -> 4)
 # CHECK: (mapExpr param=x
@@ -34,5 +34,5 @@ var g = reduce({2, 10}, 0, x y -> y)
 # CHECK:     (intLiteralExpr value=2)
 # CHECK:     (intLiteralExpr value=10)
 # CHECK:   )
-# CHECK:   (identifierRefExpr identifier=y)
+# CHECK:   (variableRefExpr identifier=y)
 # CHECK: )

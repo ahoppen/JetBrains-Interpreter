@@ -1,6 +1,9 @@
 package parser;
 
 import AST.*;
+import errorHandling.Diag;
+import errorHandling.Diagnostics;
+import errorHandling.ErrorsVerifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import utils.*;
@@ -246,7 +249,7 @@ public class Parser {
                     case "reduce":
                         return parseReduceExpr(nextToken.getLocation());
                     default:
-                        return new IdentifierRefExpr(nextToken.getLocation(),
+                        return new VariableRefExpr(nextToken.getLocation(),
                                 nextToken.getPayload());
                 }
             }

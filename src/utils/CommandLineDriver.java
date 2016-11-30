@@ -1,5 +1,7 @@
 package utils;
 
+import errorHandling.Diagnostics;
+import errorHandling.ErrorsVerifier;
 import interpreter.Interpreter;
 import interpreter.Value;
 import org.jetbrains.annotations.NotNull;

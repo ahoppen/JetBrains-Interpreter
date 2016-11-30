@@ -60,8 +60,8 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
     }
 
     @Override
-    public Void visitIdentifierRefExpr(IdentifierRefExpr identifierRefExpr) {
-        print("(identifierRefExpr identifier=" + identifierRefExpr.getIdentifier() + ")");
+    public Void visitIdentifierRefExpr(VariableRefExpr variableRefExpr) {
+        print("(variableRefExpr identifier=" + variableRefExpr.getVariableName() + ")");
         return null;
     }
 

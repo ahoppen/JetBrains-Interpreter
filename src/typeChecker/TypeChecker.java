@@ -7,18 +7,29 @@ import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import utils.ASTConsumer;
 import utils.ASTVisitor;
-import utils.Diag;
-import utils.Diagnostics;
+import errorHandling.Diag;
+import errorHandling.Diagnostics;
 
+/**
+ * Does static type checking of the AST and resolves variable references in {@link VariableRefExpr}s
+ */
 public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
     @NotNull private final ASTConsumer nextConsumer;
     @NotNull private VariableScope variableScope = new VariableScope(null);
 
+    /**
+     * @param nextConsumer The consumer to whom the type checked statements should be passed on to
+     */
     public TypeChecker(@NotNull ASTConsumer nextConsumer) {
         this.nextConsumer = nextConsumer;
     }
 
+    /**
+     * Type check the given AST node
+     * @param node The AST node to type check
+     * @return <code>true</code> iff no error was found during type checking
+     */
     private Boolean typeCheck(ASTNode node) {
         return node.acceptVisitor(this);
     }
@@ -52,8 +63,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         }
         Type lhsType = binOpExpr.getLhs().getType();
         Type rhsType = binOpExpr.getRhs().getType();
-        if (!(lhsType instanceof NumberType) ||
-                !(rhsType instanceof NumberType)) {
+        if (!(lhsType instanceof NumberType) || !(rhsType instanceof NumberType)) {
             Diagnostics.error(binOpExpr, Diag.arithmetic_operator_on_non_number,
                     binOpExpr.getOp().toSourceString(), lhsType, rhsType);
             return false;
@@ -70,16 +80,16 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitIdentifierRefExpr(IdentifierRefExpr identifierRefExpr) {
-        Variable variable = variableScope.lookupVariable(identifierRefExpr.getIdentifier());
+    public Boolean visitIdentifierRefExpr(VariableRefExpr variableRefExpr) {
+        Variable variable = variableScope.lookupVariable(variableRefExpr.getVariableName());
         if (variable == null) {
-            Diagnostics.error(identifierRefExpr, Diag.undeclared_variable,
-                    identifierRefExpr.getIdentifier());
+            Diagnostics.error(variableRefExpr, Diag.undeclared_variable,
+                    variableRefExpr.getVariableName());
             return false;
         }
 
-        identifierRefExpr.setType(variable.getType());
-        identifierRefExpr.setReferencedVariable(variable);
+        variableRefExpr.setType(variable.getType());
+        variableRefExpr.setReferencedVariable(variable);
         return true;
     }
 
@@ -102,11 +112,13 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         }
         mapExpr.getLambdaParam().setType(((SequenceType)argumentType).getSubType());
 
+        // Create a new variable scope for the lambda
         variableScope = new VariableScope(variableScope);
         variableScope.declareVariable(mapExpr.getLambdaParam());
 
         boolean lambdaTypeCheckError = !typeCheck(mapExpr.getLambda());
 
+        // Restore the old variable scope
         assert variableScope.getOuterScope() != null;
         variableScope = variableScope.getOuterScope();
 
@@ -173,6 +185,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         reduceExpr.getLambdaParam1().setType(baseType);
         reduceExpr.getLambdaParam2().setType(sequenceBaseType);
 
+        // Create a new variable scope for the lambda
         variableScope = new VariableScope(variableScope);
         variableScope.declareVariable(reduceExpr.getLambdaParam1());
         variableScope.declareVariable(reduceExpr.getLambdaParam2());
@@ -186,6 +199,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
             lambdaTypeCheckError = true;
         }
 
+        // Restore the old variable scope
         assert variableScope.getOuterScope() != null;
         variableScope = variableScope.getOuterScope();
 

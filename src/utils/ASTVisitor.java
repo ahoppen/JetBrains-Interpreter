@@ -7,7 +7,7 @@ public interface ASTVisitor<T> {
     T visitAssignStmt(AssignStmt assignStmt);
     T visitBinaryOperatorExpr(BinaryOperatorExpr binOpExpr);
     T visitFloatLiteralExpr(FloatLiteralExpr floatLiteralExpr);
-    T visitIdentifierRefExpr(IdentifierRefExpr identifierRefExpr);
+    T visitIdentifierRefExpr(VariableRefExpr variableRefExpr);
     T visitIntLiteralExpr(IntLiteralExpr intLiteralExpr);
     T visitMapExpr(MapExpr mapExpr);
     T visitOutStmt(OutStmt outExpr);

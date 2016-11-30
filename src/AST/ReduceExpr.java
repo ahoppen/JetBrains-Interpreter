@@ -4,6 +4,25 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * reduceExpr ::= 'reduce' '(' sequence ',' base ',' lambdaParam1 ' ' lambdaParam2 '->' lambda ')'
+ * </code>
+ * <p>
+ * where <code>sequence</code> is an expression returning a sequence, <code>base</code> is an
+ * expression returning the base type of the sequence, <code>lambdaParam1</code> and
+ * <code>lambdaParam2</code> are variables and <code>lambda</code> is an expression that will
+ * combine <code>lambdaParam1</code> and <code>lambdaParam2</code> into one value of the same
+ * type as <code>base</code>
+ * </p>
+ * <p>
+ * Will compute the functional reduce instruction, combining the sequence into a single value, e.g.
+ * <code>reduce({1, 5}, 1, x y -> x * y</code> will compute <code>1 * 1 * 2 * 3 * 4 * 5</code>
+ * </p>
+ * <p>
+ * For efficiency reasons in evaluation the lambda is assumed to be associative
+ * </p>
+ */
 public class ReduceExpr extends Expr {
     @NotNull private final Expr base;
     @NotNull private final Expr sequence;

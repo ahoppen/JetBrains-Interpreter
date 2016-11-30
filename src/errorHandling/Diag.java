@@ -1,4 +1,4 @@
-package utils;
+package errorHandling;
 
 public abstract class Diag {
 

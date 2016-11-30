@@ -4,6 +4,13 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * assign ::= var lhs = rhs
+ * </code>
+ *
+ * <p>where <code>lhs</code> is an identifier and <code>rhs</code> is an expression</p>
+ */
 public class AssignStmt extends Stmt {
     @NotNull private final Variable lhs;
     @NotNull private final Expr rhs;

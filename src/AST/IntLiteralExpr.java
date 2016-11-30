@@ -4,6 +4,11 @@ import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 
+/**
+ * <code>
+ * intLiteral ::= (-)?[0-9]+
+ * </code>
+ */
 public class IntLiteralExpr extends Expr {
     private final int value;
 

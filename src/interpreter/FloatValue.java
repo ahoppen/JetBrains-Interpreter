@@ -1,10 +1,13 @@
 package interpreter;
 
+/**
+ * A floating point value returned by an expression
+ */
 public class FloatValue extends Value {
 
     private final double value;
 
-    public FloatValue(double value) {
+    FloatValue(double value) {
         this.value = value;
     }
 

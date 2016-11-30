@@ -4,19 +4,26 @@ import AST.*;
 import org.jetbrains.annotations.NotNull;
 import utils.ASTConsumer;
 import utils.ASTVisitor;
-import utils.Diag;
-import utils.Diagnostics;
+import errorHandling.Diag;
+import errorHandling.Diagnostics;
 
 import java.util.*;
 
+/**
+ * Interprets the statements it consumes, saving the output of each statement in a map that can be
+ * retrieved using {@link #getOutput()}
+ */
 public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
+    /** The current values of all variables valid in the current scope */
     @NotNull private final Map<Variable, Value> variableValues = new HashMap<>();
+    /** The output of all statements consumed so far */
     @NotNull private final Map<Stmt, Value> output = new LinkedHashMap<>();
 
     @Override
     public void consumeStmt(@NotNull Stmt stmt) {
         Value stmtOutput = stmt.acceptVisitor(this);
+        // If the statement produces output (i.e. 'print' and 'out') save it to the ouputs
         if (stmtOutput != null) {
             output.put(stmt, stmtOutput);
         }
@@ -46,6 +53,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         if (lhs instanceof ErrorValue || rhs instanceof ErrorValue) {
             return ErrorValue.get();
         } else if (lhs instanceof IntValue && rhs instanceof IntValue) {
+            // If both operands are integers, the result is often also an integer
             int value;
             switch (binOpExpr.getOp()) {
                 case ADD:
@@ -58,6 +66,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     value = ((IntValue)lhs).getValue() * ((IntValue)rhs).getValue();
                     break;
                 case DIV: {
+                    // Division might result in a fraction, hence return a double value
+                    // FIXME: Return an integer if division is possible without remainder
                     double doubleValue = (double)((IntValue)lhs).getValue() /
                             ((IntValue)rhs).getValue();
                     return new FloatValue(doubleValue);
@@ -66,7 +76,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     int base = ((IntValue)lhs).getValue();
                     int exponent = ((IntValue)rhs).getValue();
                     if (exponent >= 0) {
-                        // Exponentiation results in an integer
+                        // Exponentiation results in an integer if exponent >= 0
                         value = (int)Math.pow(base, exponent);
                         break;
                     } else {
@@ -155,10 +165,11 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
     }
 
     @Override
-    public Value visitIdentifierRefExpr(IdentifierRefExpr identifierRefExpr) {
-        Value value = variableValues.get(identifierRefExpr.getReferencedVariable());
+    public Value visitIdentifierRefExpr(VariableRefExpr variableRefExpr) {
+        Value value = variableValues.get(variableRefExpr.getReferencedVariable());
         if (value == null) {
-            return ErrorValue.get();
+            throw new RuntimeException("Variable " + variableRefExpr.getReferencedVariable() +
+                    "has no value although the type checker should have enforced it");
         } else {
             return value;
         }
@@ -176,11 +187,14 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         if (argument instanceof ErrorValue) {
             return ErrorValue.get();
         }
-        // The type checker guarantees this is a sequence
+        // The type checker guarantees that the argument is a sequence
         SequenceValue toTransform = (SequenceValue)argument;
+
+        // Accumulate the transformed values in this list
         List<Value> transformedValues = new ArrayList<>(toTransform.getValues().size());
 
         for (Value value : toTransform.getValues()) {
+            // Set the variable's value and evaluate the expression with this value
             variableValues.put(mapExpr.getLambdaParam(), value);
             Value transformedValue = evaluateExpr(mapExpr.getLambda());
             if (transformedValue instanceof ErrorValue) {
@@ -188,6 +202,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             }
             transformedValues.add(transformedValue);
         }
+
+        // The lambda param is no longer valid after the lambda's scope -> remove it
         variableValues.remove(mapExpr.getLambdaParam());
 
         return new SequenceValue(transformedValues);
@@ -256,6 +272,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         SequenceValue toTransform = (SequenceValue)argument;
 
         for (Value value : toTransform.getValues()) {
+            // Inject the lambda parameter's values and evaluate the value to calculate the new
+            // current value
             variableValues.put(reduceExpr.getLambdaParam1(), currentValue);
             variableValues.put(reduceExpr.getLambdaParam2(), value);
             currentValue = evaluateExpr(reduceExpr.getLambda());
@@ -264,6 +282,10 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                 return ErrorValue.get();
             }
         }
+
+        // The lambda parameter's values are no longer valid after the lambda's scope -> remove them
+        variableValues.remove(reduceExpr.getLambdaParam1());
+        variableValues.remove(reduceExpr.getLambdaParam2());
 
         return currentValue;
     }

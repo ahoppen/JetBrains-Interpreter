@@ -1,8 +1,9 @@
-package utils;
+package errorHandling;
 
 import AST.ASTNode;
 import org.jetbrains.annotations.NotNull;
 import parser.Token;
+import utils.SourceLoc;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,7 +14,7 @@ public class Diagnostics {
         @NotNull private final SourceLoc location;
         @NotNull private final String message;
 
-        public Error(@NotNull SourceLoc location, @NotNull String message) {
+        Error(@NotNull SourceLoc location, @NotNull String message) {
             this.location = location;
             this.message = message;
         }
@@ -29,31 +30,54 @@ public class Diagnostics {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (!(obj instanceof Error)) {
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Error)) {
                 return false;
             }
-            Error other = ((Error)obj);
-            return other.location.equals(location) && other.message.equals(message);
+            Error error = (Error)o;
+            return location.equals(error.location) && message.equals(error.message);
         }
 
         @Override
         public int hashCode() {
-            return location.hashCode() ^ message.hashCode();
+            int result = location.hashCode();
+            result = 31 * result + message.hashCode();
+            return result;
         }
     }
 
     @NotNull private static final List<Error> errors = new LinkedList<>();
 
+    /**
+     * Report an new error
+     * @param location The location where the error occurred
+     * @param error The error message. May contain placeholders for <code>args</code>
+     * @param args Objects to be inserted into the error message's placeholders
+     */
     public static void error(@NotNull SourceLoc location, @NotNull String error, Object... args) {
         String errorMessage = String.format(error, args);
         errors.add(new Error(location, errorMessage));
     }
 
+    /**
+     * Report an new error
+     * @param token The token at which the error occurred
+     * @param error The error message. May contain placeholders for <code>args</code>
+     * @param args Objects to be inserted into the error message's placeholders
+     */
     public static void error(@NotNull Token token, @NotNull String error, Object... args) {
         error(token.getLocation(), error, args);
     }
 
+    /**
+     * Report an new error
+     * @param astNode The AST node where the error occurred
+     * @param error The error message. May contain placeholders for <code>args</code>
+     * @param args Objects to be inserted into the error message's placeholders
+     */
     public static void error(@NotNull ASTNode astNode, @NotNull String error, Object... args) {
         error(astNode.getLocation(), error, args);
     }

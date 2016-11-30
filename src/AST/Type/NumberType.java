@@ -1,5 +1,8 @@
 package AST.Type;
 
+/**
+ * A float or int type
+ */
 public class NumberType extends Type {
 
     private static final NumberType INSTANCE = new NumberType();

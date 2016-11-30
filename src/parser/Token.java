@@ -4,6 +4,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import utils.SourceLoc;
 
+/**
+ * Represents a token lexed by {@link Lexer}.
+ */
 public class Token {
 
     public enum Kind {
@@ -117,6 +120,8 @@ public class Token {
             case COMMA:
                 return ",";
             case STRING_LITERAL:
+                // FIXME: Escape the characters of the payload again
+                assert getPayload() != null;
                 return "\"" + getPayload() + "\"";
             case ASSIGN:
                 return "=";

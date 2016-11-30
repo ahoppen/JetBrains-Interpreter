@@ -1,10 +1,13 @@
 package interpreter;
 
+/**
+ * An integer value returned by an expression
+ */
 public class IntValue extends Value {
 
     private final int value;
 
-    public IntValue(int value) {
+    IntValue(int value) {
         this.value = value;
     }
 

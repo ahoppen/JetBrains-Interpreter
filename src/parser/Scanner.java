@@ -8,6 +8,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+/**
+ * Allows consumption of characters from the source file and keeps track of the position of the
+ * characters in the source file as line and column
+ */
 class Scanner {
 
     @NotNull private final Reader inputReader;
@@ -15,6 +19,9 @@ class Scanner {
     private int column = 1;
     private int line = 1;
 
+    /**
+     * @param inputReader A reader that can be used to read the source code
+     */
     Scanner(@NotNull Reader inputReader) {
         this.inputReader = inputReader;
     }
@@ -34,6 +41,10 @@ class Scanner {
         }
     }
 
+    /**
+     * @return The next character in the source code without consuming it
+     * @throws EOFException If there is no next character in the source code
+     */
     char peek() throws EOFException {
         fillBuffer(1);
         return buffer.peek();
@@ -42,12 +53,13 @@ class Scanner {
     /**
      * Consumes and returns the next character
      * @return The next character in the input stream
-     * @throws EOFException When the end of the file has been reached
+     * @throws EOFException If the end of the file has been reached
      */
     char consume() throws EOFException {
         fillBuffer(1);
         char c = buffer.pop();
         if (c == '\n' || c == '\r') {
+            // FIXME: Handle \r\n in windows encodings correctly
             line++;
             column = 1;
         } else {
@@ -73,6 +85,10 @@ class Scanner {
         }
     }
 
+    /**
+     * @return The source location of the next character
+     */
+    @NotNull
     SourceLoc getCurrentSourceLoc() {
         return new SourceLoc(line, column);
     }
