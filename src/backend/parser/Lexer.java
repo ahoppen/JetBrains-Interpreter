@@ -61,12 +61,14 @@ public class Lexer {
                     switch (scanner.peek()) {
                         case '>':
                             scanner.consume();
-                            return new Token(Token.Kind.ARROW, location);
+                            return new Token(Token.Kind.ARROW, location,
+                                    scanner.getCurrentSourceLoc());
                         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
                         case '8': case '9': case '.':
                             return lexNumberLiteral(true);
                         default:
-                            return new Token(Token.Kind.SUB, location);
+                            return new Token(Token.Kind.SUB, location,
+                                    scanner.getCurrentSourceLoc());
                     }
                 }
                 case '*':
@@ -91,7 +93,8 @@ public class Lexer {
                             nextChar = scanner.consume();
                         }
                     } catch (EOFException ignored) {}
-                    return new Token(Token.Kind.COMMENT, comment.toString(), location);
+                    return new Token(Token.Kind.COMMENT, comment.toString(), location,
+                            scanner.getCurrentSourceLoc());
                 }
                 default:
                     Diagnostics.error(scanner.getCurrentSourceLoc(), Diag.invalid_character,
@@ -99,7 +102,8 @@ public class Lexer {
                     return createSingeCharToken(Token.Kind.ERROR);
             }
         } catch (EOFException e) {
-            return new Token(Token.Kind.EOF, scanner.getCurrentSourceLoc());
+            return new Token(Token.Kind.EOF, scanner.getCurrentSourceLoc(),
+                    scanner.getCurrentSourceLoc());
         }
     }
 
@@ -115,7 +119,7 @@ public class Lexer {
     private Token createSingeCharToken(@NotNull Token.Kind kind) throws EOFException {
         SourceLoc location = scanner.getCurrentSourceLoc();
         scanner.consume();
-        return new Token(kind, location);
+        return new Token(kind, location, scanner.getCurrentSourceLoc());
     }
 
     /**
@@ -150,7 +154,8 @@ public class Lexer {
         }
 
         assert identifierName.length() > 0 : "An identifier must contain at least one character";
-        return new Token(Token.Kind.IDENTIFIER, identifierName.toString(), location);
+        return new Token(Token.Kind.IDENTIFIER, identifierName.toString(), location,
+                scanner.getCurrentSourceLoc());
     }
 
     /**
@@ -183,7 +188,8 @@ public class Lexer {
                             Diagnostics.error(scanner.getCurrentSourceLoc(),
                                     Diag.two_dots_in_number_literal);
                             scanner.consumeCharactersInString("0123456789.");
-                            return new Token(Token.Kind.ERROR, location);
+                            return new Token(Token.Kind.ERROR, location,
+                                    scanner.getCurrentSourceLoc());
                         }
                     default:
                         break characterConsumption;
@@ -194,9 +200,10 @@ public class Lexer {
         String numberString = numberStringBuilder.toString();
         if (numberString.equals(".") || numberString.equals("-.")) {
             Diagnostics.error(location, Diag.single_dot_no_number_literal);
-            return new Token(Token.Kind.ERROR, location);
+            return new Token(Token.Kind.ERROR, location, scanner.getCurrentSourceLoc());
         }
-        return new Token(kind, numberStringBuilder.toString(), location);
+        return new Token(kind, numberStringBuilder.toString(), location,
+                scanner.getCurrentSourceLoc());
     }
 
     /**
@@ -233,13 +240,15 @@ public class Lexer {
                         escapedMode = true;
                     } else if (c == '"') {
                         // End of string reached
-                        return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
+                        return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location,
+                                scanner.getCurrentSourceLoc());
                     } else {
                         if (c == '\n' || c == '\r') {
                             // Reached end of line, just assume the string is terminated and
                             // return it
                             Diagnostics.error(location, Diag.eol_before_string_terminated);
-                            return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
+                            return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location,
+                                    scanner.getCurrentSourceLoc());
                         }
                         sb.append(c);
                     }
@@ -250,7 +259,8 @@ public class Lexer {
             } while (true);
         } catch (EOFException e) {
             Diagnostics.error(location, Diag.eof_before_string_terminated);
-            return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location);
+            return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location,
+                    scanner.getCurrentSourceLoc());
         }
     }
 

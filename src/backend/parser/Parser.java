@@ -52,7 +52,7 @@ public class Parser {
                 assert token.getPayload() != null;
                 switch (token.getPayload()) {
                     case "var": {
-                        AssignStmt assignmentStmt = parseAssignment(token.getLocation());
+                        AssignStmt assignmentStmt = parseAssignment(token.getStartLocation());
                         if (assignmentStmt != null) {
                             return assignmentStmt;
                         } else {
@@ -63,7 +63,7 @@ public class Parser {
                     case "out": {
                         Expr expr = parseExpr();
                         if (expr != null) {
-                            return new OutStmt(token.getLocation(), expr);
+                            return new OutStmt(token.getStartLocation(), expr);
                         } else {
                             break;
                         }
@@ -78,7 +78,7 @@ public class Parser {
                         // Consume the string token
                         consumeToken();
                         assert stringToken.getPayload() != null;
-                        return new PrintStmt(token.getLocation(), stringToken.getPayload());
+                        return new PrintStmt(token.getStartLocation(), stringToken.getPayload());
                     }
                     default:
                         Diagnostics.error(token, Diag.unexpected_start_of_stmt,
@@ -179,7 +179,7 @@ public class Parser {
                     if (rhs == null) {
                         return null;
                     }
-                    workingExpr = new BinaryOperatorExpr(nextToken.getLocation(), workingExpr,
+                    workingExpr = new BinaryOperatorExpr(nextToken.getStartLocation(), workingExpr,
                             operator, rhs);
                 } else {
                     break;
@@ -202,14 +202,14 @@ public class Parser {
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 int value = Integer.parseInt(nextToken.getPayload());
-                return new IntLiteralExpr(nextToken.getLocation(), value);
+                return new IntLiteralExpr(nextToken.getStartLocation(), value);
             }
             case FLOAT_LITERAL: {
                 consumeToken();
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 double value = Double.parseDouble(nextToken.getPayload());
-                return new FloatLiteralExpr(nextToken.getLocation(), value);
+                return new FloatLiteralExpr(nextToken.getStartLocation(), value);
             }
             case L_PAREN: {
                 consumeToken();
@@ -220,7 +220,7 @@ public class Parser {
                 if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
                     return null;
                 }
-                return new ParenExpr(nextToken.getLocation(), subExpr);
+                return new ParenExpr(nextToken.getStartLocation(), subExpr);
             }
             case L_BRACE: {
                 consumeToken();
@@ -238,18 +238,18 @@ public class Parser {
                 if (!consumeToken(Token.Kind.R_BRACE, Diag.r_brace_expected)) {
                     return null;
                 }
-                return new RangeExpr(nextToken.getLocation(), lowerBound, upperBound);
+                return new RangeExpr(nextToken.getStartLocation(), lowerBound, upperBound);
             }
             case IDENTIFIER: {
                 consumeToken();
                 assert nextToken.getPayload() != null;
                 switch (nextToken.getPayload()) {
                     case "map":
-                        return parseMapExpr(nextToken.getLocation());
+                        return parseMapExpr(nextToken.getStartLocation());
                     case "reduce":
-                        return parseReduceExpr(nextToken.getLocation());
+                        return parseReduceExpr(nextToken.getStartLocation());
                     default:
-                        return new VariableRefExpr(nextToken.getLocation(),
+                        return new VariableRefExpr(nextToken.getStartLocation(),
                                 nextToken.getPayload());
                 }
             }

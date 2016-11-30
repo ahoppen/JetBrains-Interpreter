@@ -33,16 +33,19 @@ public class Token {
 
     @NotNull private final Kind kind;
     @Nullable private final String payload;
-    @NotNull private final SourceLoc location;
+    @NotNull private final SourceLoc startLocation;
+    @NotNull private final SourceLoc endLocation;
 
-    Token(@NotNull Kind kind, @Nullable String payload, @NotNull SourceLoc location) {
+    Token(@NotNull Kind kind, @Nullable String payload, @NotNull SourceLoc startLocation,
+          @NotNull SourceLoc endLocation) {
         this.kind = kind;
         this.payload = payload;
-        this.location = location;
+        this.startLocation = startLocation;
+        this.endLocation = endLocation;
     }
 
-    Token(Kind kind, @NotNull SourceLoc location) {
-        this(kind, null, location);
+    Token(Kind kind, @NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation) {
+        this(kind, null, startLocation, endLocation);
     }
 
     @NotNull
@@ -56,8 +59,13 @@ public class Token {
     }
 
     @NotNull
-    public SourceLoc getLocation() {
-        return location;
+    public SourceLoc getStartLocation() {
+        return startLocation;
+    }
+
+    @NotNull
+    public SourceLoc getEndLocation() {
+        return endLocation;
     }
 
     public boolean isOperator() {

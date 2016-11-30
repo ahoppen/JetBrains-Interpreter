@@ -28,7 +28,7 @@ public class ErrorsVerifier {
             String column = matcher.group(2);
             String message = matcher.group(3).trim();
 
-            int expectedErrorLine = token.getLocation().getLine();
+            int expectedErrorLine = token.getStartLocation().getLine();
             if (line != null) {
                 expectedErrorLine += Integer.parseInt(line);
             }

@@ -1,0 +1,19 @@
+.identifier {
+}
+.keyword {
+    -fx-font-weight: bold;
+}
+.operator {
+}
+.braces {
+
+}
+.numberLiteral {
+    -fx-fill: #00389a;
+}
+.stringLiteral {
+    -fx-fill: #a61e22;
+}
+.comment {
+    -fx-fill: #a7ee8a;
+}

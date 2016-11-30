@@ -69,7 +69,7 @@ public class Diagnostics {
      * @param args Objects to be inserted into the error message's placeholders
      */
     public static void error(@NotNull Token token, @NotNull String error, Object... args) {
-        error(token.getLocation(), error, args);
+        error(token.getStartLocation(), error, args);
     }
 
     /**
