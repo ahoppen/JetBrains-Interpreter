@@ -17,3 +17,6 @@
 .comment {
     -fx-fill: #a7ee8a;
 }
+.error {
+    -fx-underline: true;
+}

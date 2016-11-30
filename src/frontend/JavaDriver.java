@@ -44,6 +44,9 @@ public class JavaDriver {
     public static EvaluationResult evaluate(String sourceCode) {
         Reader reader = new StringReader(sourceCode);
 
+        // FIXME: Don't use a singleton for the diagnostics
+        Diagnostics.getErrors().clear();
+
         Interpreter interpreter = new Interpreter();
         TypeChecker typeChecker = new TypeChecker(interpreter);
         Parser parser = new Parser(reader, typeChecker);
