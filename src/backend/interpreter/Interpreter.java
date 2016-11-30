@@ -73,10 +73,16 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     break;
                 case DIV: {
                     // Division might result in a fraction, hence return a double value
-                    // FIXME: Return an integer if division is possible without remainder
-                    double doubleValue = (double)((IntValue)lhs).getValue() /
-                            ((IntValue)rhs).getValue();
-                    return new FloatValue(doubleValue);
+                    int lhsValue = ((IntValue)lhs).getValue();
+                    int rhsValue = ((IntValue)rhs).getValue();
+                    if (lhsValue % rhsValue == 0) {
+                        // Division results in an integer -> return an IntValue
+                        value = lhsValue / rhsValue;
+                        break;
+                    } else {
+                        double doubleValue = (double)lhsValue / rhsValue;
+                        return new FloatValue(doubleValue);
+                    }
                 }
                 case POW: {
                     int base = ((IntValue)lhs).getValue();
