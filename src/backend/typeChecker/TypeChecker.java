@@ -36,8 +36,9 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
     @Override
     public void consumeStmt(@NotNull Stmt stmt) {
-        typeCheck(stmt);
-        nextConsumer.consumeStmt(stmt);
+        if (typeCheck(stmt)) {
+            nextConsumer.consumeStmt(stmt);
+        }
     }
 
     @Override
