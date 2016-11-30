@@ -16,9 +16,7 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 public class IDE extends Application {
 
@@ -69,7 +67,9 @@ public class IDE extends Application {
         JavaDriver.EvaluationResult result = JavaDriver.evaluate(sourceCode);
         resultsArea.clear();
         int currentLine = 1;
-        for (Map.Entry<SourceLoc, Value> output : result.getOutput().entrySet()) {
+        List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(result.getOutput().entrySet());
+        outputs.sort(Comparator.comparing(Map.Entry::getKey));
+        for (Map.Entry<SourceLoc, Value> output : outputs) {
             while (currentLine < output.getKey().getLine()) {
                 resultsArea.appendText("\n");
                 currentLine++;

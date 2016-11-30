@@ -1,6 +1,6 @@
 package backend.utils;
 
-public class SourceLoc {
+public class SourceLoc implements Comparable<SourceLoc> {
 
     private final int line;
     private final int column;
@@ -38,5 +38,14 @@ public class SourceLoc {
     @Override
     public String toString() {
         return line + ":" + column;
+    }
+
+
+    @Override
+    public int compareTo(SourceLoc o) {
+        if (line != o.line) {
+            return line - o.line;
+        }
+        return column - o.column;
     }
 }
