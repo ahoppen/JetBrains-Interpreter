@@ -49,7 +49,7 @@ public class Diagnostics {
         }
     }
 
-    @NotNull private static final List<Error> errors = new LinkedList<>();
+    @NotNull private final List<Error> errors = new LinkedList<>();
 
     /**
      * Report an new error
@@ -57,7 +57,7 @@ public class Diagnostics {
      * @param error The error message. May contain placeholders for <code>args</code>
      * @param args Objects to be inserted into the error message's placeholders
      */
-    public static void error(@NotNull SourceLoc location, @NotNull String error, Object... args) {
+    public void error(@NotNull SourceLoc location, @NotNull String error, Object... args) {
         String errorMessage = String.format(error, args);
         errors.add(new Error(location, errorMessage));
     }
@@ -68,7 +68,7 @@ public class Diagnostics {
      * @param error The error message. May contain placeholders for <code>args</code>
      * @param args Objects to be inserted into the error message's placeholders
      */
-    public static void error(@NotNull Token token, @NotNull String error, Object... args) {
+    public void error(@NotNull Token token, @NotNull String error, Object... args) {
         error(token.getStartLocation(), error, args);
     }
 
@@ -78,12 +78,12 @@ public class Diagnostics {
      * @param error The error message. May contain placeholders for <code>args</code>
      * @param args Objects to be inserted into the error message's placeholders
      */
-    public static void error(@NotNull ASTNode astNode, @NotNull String error, Object... args) {
+    public void error(@NotNull ASTNode astNode, @NotNull String error, Object... args) {
         error(astNode.getLocation(), error, args);
     }
 
     @NotNull
-    public static List<Error> getErrors() {
+    public List<Error> getErrors() {
         return errors;
     }
 }

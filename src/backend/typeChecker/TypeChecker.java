@@ -16,13 +16,15 @@ import backend.errorHandling.Diagnostics;
 public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
     @NotNull private final ASTConsumer nextConsumer;
+    @NotNull private final Diagnostics diagnostics;
     @NotNull private VariableScope variableScope = new VariableScope(null);
 
     /**
      * @param nextConsumer The consumer to whom the type checked statements should be passed on to
      */
-    public TypeChecker(@NotNull ASTConsumer nextConsumer) {
+    public TypeChecker(@NotNull ASTConsumer nextConsumer, @NotNull Diagnostics diagnostics) {
         this.nextConsumer = nextConsumer;
+        this.diagnostics = diagnostics;
     }
 
     /**
@@ -47,7 +49,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
             return false;
         }
         if (variableScope.isVariableDeclared(assignStmt.getLhs().getName())) {
-            Diagnostics.error(assignStmt, Diag.variable_already_declared,
+            diagnostics.error(assignStmt, Diag.variable_already_declared,
                     assignStmt.getLhs().getName());
             return false;
         }
@@ -65,7 +67,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         Type lhsType = binOpExpr.getLhs().getType();
         Type rhsType = binOpExpr.getRhs().getType();
         if (!(lhsType instanceof NumberType) || !(rhsType instanceof NumberType)) {
-            Diagnostics.error(binOpExpr, Diag.arithmetic_operator_on_non_number,
+            diagnostics.error(binOpExpr, Diag.arithmetic_operator_on_non_number,
                     binOpExpr.getOp().toSourceString(), lhsType, rhsType);
             return false;
         }
@@ -84,7 +86,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
     public Boolean visitIdentifierRefExpr(VariableRefExpr variableRefExpr) {
         Variable variable = variableScope.lookupVariable(variableRefExpr.getVariableName());
         if (variable == null) {
-            Diagnostics.error(variableRefExpr, Diag.undeclared_variable,
+            diagnostics.error(variableRefExpr, Diag.undeclared_variable,
                     variableRefExpr.getVariableName());
             return false;
         }
@@ -107,7 +109,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         }
         Type argumentType = mapExpr.getArgument().getType();
         if (!(argumentType instanceof SequenceType)) {
-            Diagnostics.error(mapExpr.getArgument(), Diag.argument_of_map_not_sequence,
+            diagnostics.error(mapExpr.getArgument(), Diag.argument_of_map_not_sequence,
                     argumentType);
             return false;
         }
@@ -157,12 +159,12 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
             return false;
         }
         if (!(rangeExpr.getLowerBound().getType() instanceof NumberType)) {
-            Diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
+            diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
                     rangeExpr.getLowerBound().getType());
             return false;
         }
         if (!(rangeExpr.getUpperBound().getType() instanceof NumberType)) {
-            Diagnostics.error(rangeExpr.getUpperBound(), Diag.upper_bound_of_range_not_int,
+            diagnostics.error(rangeExpr.getUpperBound(), Diag.upper_bound_of_range_not_int,
                     rangeExpr.getUpperBound().getType());
             return false;
         }
@@ -176,7 +178,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
             return false;
         }
         if (!(reduceExpr.getSequence().getType() instanceof SequenceType)) {
-            Diagnostics.error(reduceExpr.getSequence(), Diag.argument_of_reduce_not_sequence,
+            diagnostics.error(reduceExpr.getSequence(), Diag.argument_of_reduce_not_sequence,
                     reduceExpr.getSequence().getType());
             return false;
         }
@@ -194,7 +196,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
         boolean lambdaTypeCheckError = !typeCheck(reduceExpr.getLambda());
 
         if (!reduceExpr.getLambda().getType().equals(baseType)) {
-            Diagnostics.error(reduceExpr.getLambda(),
+            diagnostics.error(reduceExpr.getLambda(),
                     Diag.lambda_of_reduce_does_not_return_base_type, baseType,
                     reduceExpr.getLambda().getType());
             lambdaTypeCheckError = true;

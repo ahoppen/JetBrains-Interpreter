@@ -1,5 +1,6 @@
 package frontend;
 
+import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
 import backend.errorHandling.ErrorsVerifier;
 import backend.interpreter.Interpreter;
@@ -43,9 +44,11 @@ public class CommandLineDriver {
             return;
         }
 
+        Diagnostics diagnostics = new Diagnostics();
+
         switch (mode) {
             case "-lex": {
-                Lexer lexer = new Lexer(reader);
+                Lexer lexer = new Lexer(reader, diagnostics);
                 Token token = lexer.nextToken();
                 ErrorsVerifier verifier = new ErrorsVerifier();
                 while (token.getKind() !=  Token.Kind.EOF) {
@@ -58,52 +61,48 @@ public class CommandLineDriver {
                     token = lexer.nextToken();
                 }
                 if (verify) {
-                    System.exit(verifyErrors(verifier) ? 0 : 1);
+                    System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
                 } else {
-                    printErrors();
+                    printErrors(diagnostics);
                 }
                 break;
             }
             case "-parse": {
                 ASTPrinter printer = new ASTPrinter();
                 ErrorsVerifier verifier = new ErrorsVerifier();
-                Parser parser = new Parser(reader, printer, verifier);
+                Parser parser = new Parser(reader, printer, diagnostics, verifier);
                 parser.parse();
                 if (verify) {
-                    if (verifyErrors(verifier)) {
-                        System.exit(0);
-                    } else {
-                        System.exit(1);
-                    }
+                    System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
                 } else {
-                    printErrors();
+                    printErrors(diagnostics);
                 }
                 break;
             }
             case "-typeCheck": {
                 ASTPrinter printer = new ASTPrinter();
-                TypeChecker typeChecker = new TypeChecker(printer);
+                TypeChecker typeChecker = new TypeChecker(printer, diagnostics);
                 ErrorsVerifier verifier = new ErrorsVerifier();
-                Parser parser = new Parser(reader, typeChecker, verifier);
+                Parser parser = new Parser(reader, typeChecker, diagnostics, verifier);
                 parser.parse();
                 if (verify) {
-                    System.exit(verifyErrors(verifier) ? 0 : 1);
+                    System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
                 } else {
-                    printErrors();
+                    printErrors(diagnostics);
                 }
                 break;
             }
             case "-evaluate": {
-                Interpreter interpreter = new Interpreter();
-                TypeChecker typeChecker = new TypeChecker(interpreter);
+                Interpreter interpreter = new Interpreter(diagnostics);
+                TypeChecker typeChecker = new TypeChecker(interpreter, diagnostics);
                 ErrorsVerifier verifier = new ErrorsVerifier();
-                Parser parser = new Parser(reader, typeChecker, verifier);
+                Parser parser = new Parser(reader, typeChecker, diagnostics, verifier);
                 parser.parse();
                 boolean failure = false;
                 if (verify) {
-                    failure = verifyErrors(verifier);
+                    failure = verifyErrors(verifier, diagnostics);
                 } else {
-                    printErrors();
+                    printErrors(diagnostics);
                 }
                 for (Value value : interpreter.getOutput().values()) {
                     System.out.print(value);
@@ -117,9 +116,10 @@ public class CommandLineDriver {
         }
     }
 
-    private static boolean verifyErrors(@NotNull ErrorsVerifier verifier) {
+    private static boolean verifyErrors(@NotNull ErrorsVerifier verifier,
+                                        @NotNull Diagnostics diagnostics) {
         boolean failure = false;
-        for (Diagnostics.Error error : Diagnostics.getErrors()) {
+        for (Diagnostics.Error error : diagnostics.getErrors()) {
             if (!verifier.matchError(error)) {
                 System.err.println("Unexpected error seen: " + error.getLocation() +
                         ": " + error.getMessage());
@@ -134,8 +134,8 @@ public class CommandLineDriver {
         return !failure;
     }
 
-    private static void printErrors() {
-        for (Diagnostics.Error error : Diagnostics.getErrors()) {
+    private static void printErrors(@NotNull Diagnostics diagnostics) {
+        for (Diagnostics.Error error : diagnostics.getErrors()) {
             System.out.println(error.getLocation() + ": " + error.getMessage());
         }
     }

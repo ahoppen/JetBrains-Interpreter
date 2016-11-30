@@ -1,8 +1,8 @@
 package frontend;
 
 import backend.AST.Stmt;
+import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
-import backend.errorHandling.ErrorsVerifier;
 import backend.interpreter.Interpreter;
 import backend.interpreter.Value;
 import backend.parser.Lexer;
@@ -12,8 +12,6 @@ import backend.typeChecker.TypeChecker;
 import backend.utils.SourceLoc;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.*;
@@ -44,12 +42,11 @@ public class JavaDriver {
     public static EvaluationResult evaluate(String sourceCode) {
         Reader reader = new StringReader(sourceCode);
 
-        // FIXME: Don't use a singleton for the diagnostics
-        Diagnostics.getErrors().clear();
+        Diagnostics diagnostics = new Diagnostics();
 
-        Interpreter interpreter = new Interpreter();
-        TypeChecker typeChecker = new TypeChecker(interpreter);
-        Parser parser = new Parser(reader, typeChecker);
+        Interpreter interpreter = new Interpreter(diagnostics);
+        TypeChecker typeChecker = new TypeChecker(interpreter, diagnostics);
+        Parser parser = new Parser(reader, typeChecker, diagnostics);
         parser.parse();
 
         Map<SourceLoc, Value> output = new HashMap<>();
@@ -57,7 +54,7 @@ public class JavaDriver {
             output.put(entry.getKey().getLocation(), entry.getValue());
         }
 
-        List<Diagnostics.Error> errors = Diagnostics.getErrors();
+        List<Diagnostics.Error> errors = diagnostics.getErrors();
 
         return new EvaluationResult(errors, output);
     }
@@ -68,7 +65,9 @@ public class JavaDriver {
 
         List<Token> tokens = new LinkedList<>();
 
-        Lexer lexer = new Lexer(reader);
+        Diagnostics diagnostics = new Diagnostics();
+
+        Lexer lexer = new Lexer(reader, diagnostics);
         Token token = lexer.nextToken();
         while (token.getKind() !=  Token.Kind.EOF) {
             tokens.add(token);

@@ -15,16 +15,19 @@ public class Parser {
     @NotNull private final Lexer lexer;
     @NotNull private final ASTConsumer consumer;
     @Nullable private final ErrorsVerifier verifier;
+    @NotNull private final Diagnostics diagnostics;
     @Nullable private Token peekedToken;
 
-    public Parser(@NotNull Reader inputReader, @NotNull ASTConsumer consumer) {
-        this(inputReader, consumer, null);
+    public Parser(@NotNull Reader inputReader, @NotNull ASTConsumer consumer,
+                  @NotNull Diagnostics diagnostics) {
+        this(inputReader, consumer, diagnostics, null);
     }
 
     public Parser(@NotNull Reader inputReader, @NotNull ASTConsumer consumer,
-                  @Nullable ErrorsVerifier verifier) {
-        lexer = new Lexer(inputReader);
+                  @NotNull Diagnostics diagnostics, @Nullable ErrorsVerifier verifier) {
+        lexer = new Lexer(inputReader, diagnostics);
         this.consumer = consumer;
+        this.diagnostics = diagnostics;
         this.verifier = verifier;
     }
 
@@ -71,7 +74,7 @@ public class Parser {
                     case "print": {
                         Token stringToken = peekToken();
                         if (stringToken.getKind() != Token.Kind.STRING_LITERAL) {
-                            Diagnostics.error(stringToken, Diag.no_string_literal_after_print,
+                            diagnostics.error(stringToken, Diag.no_string_literal_after_print,
                                     stringToken);
                             break;
                         }
@@ -81,11 +84,11 @@ public class Parser {
                         return new PrintStmt(token.getStartLocation(), stringToken.getPayload());
                     }
                     default:
-                        Diagnostics.error(token, Diag.unexpected_start_of_stmt,
+                        diagnostics.error(token, Diag.unexpected_start_of_stmt,
                                 token.toSourceString());
                 }
             } else {
-                Diagnostics.error(token, Diag.unexpected_start_of_stmt, token.toSourceString());
+                diagnostics.error(token, Diag.unexpected_start_of_stmt, token.toSourceString());
             }
         }
     }
@@ -93,7 +96,7 @@ public class Parser {
     private Variable parseVariable(String diag) {
         Token nextToken = consumeToken();
         if (nextToken.getKind() != Token.Kind.IDENTIFIER) {
-            Diagnostics.error(nextToken, diag, nextToken.toSourceString());
+            diagnostics.error(nextToken, diag, nextToken.toSourceString());
             return null;
         }
         assert nextToken.getPayload() != null;
@@ -115,7 +118,7 @@ public class Parser {
         // Parse '='
         Token nextToken = consumeToken();
         if (nextToken.getKind() != Token.Kind.ASSIGN) {
-            Diagnostics.error(nextToken, Diag.expected_equal_sign_in_assignment,
+            diagnostics.error(nextToken, Diag.expected_equal_sign_in_assignment,
                     nextToken.toSourceString());
             return null;
         }
@@ -255,7 +258,7 @@ public class Parser {
             }
             default: {
                 consumeToken();
-                Diagnostics.error(nextToken, Diag.invalid_start_of_expr,
+                diagnostics.error(nextToken, Diag.invalid_start_of_expr,
                         nextToken.toSourceString());
                 return null;
             }
@@ -372,7 +375,7 @@ public class Parser {
     private boolean consumeToken(Token.Kind kind, String diag) {
         Token nextToken = consumeToken();
         if (nextToken.getKind() != kind) {
-            Diagnostics.error(nextToken, diag, nextToken.toSourceString());
+            diagnostics.error(nextToken, diag, nextToken.toSourceString());
             return false;
         } else {
             return true;

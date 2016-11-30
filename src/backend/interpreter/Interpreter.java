@@ -15,10 +15,16 @@ import java.util.*;
  */
 public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
+    @NotNull private final Diagnostics diagnostics;
+
     /** The current values of all variables valid in the current scope */
     @NotNull private final Map<Variable, Value> variableValues = new HashMap<>();
     /** The output of all statements consumed so far */
     @NotNull private final Map<Stmt, Value> output = new LinkedHashMap<>();
+
+    public Interpreter(@NotNull Diagnostics diagnostics) {
+        this.diagnostics = diagnostics;
+    }
 
     @Override
     public void consumeStmt(@NotNull Stmt stmt) {
@@ -232,12 +238,12 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             return ErrorValue.get();
         }
         if (!(lowerBoundValue instanceof IntValue)) {
-            Diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
+            diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
                     "Float");
             return ErrorValue.get();
         }
         if (!(upperBoundValue instanceof IntValue)) {
-            Diagnostics.error(rangeExpr.getUpperBound(), Diag.upper_bound_of_range_not_int,
+            diagnostics.error(rangeExpr.getUpperBound(), Diag.upper_bound_of_range_not_int,
                     "Float");
             return ErrorValue.get();
         }
@@ -245,7 +251,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         int upperBound = ((IntValue)upperBoundValue).getValue();
 
         if (upperBound < lowerBound) {
-            Diagnostics.error(rangeExpr, Diag.range_upper_bound_smaller_than_lower_bound);
+            diagnostics.error(rangeExpr, Diag.range_upper_bound_smaller_than_lower_bound);
             return ErrorValue.get();
         }
 
