@@ -13,8 +13,9 @@ import backend.utils.SourceLoc;
 public class ParenExpr extends Expr {
     @NotNull private final Expr subExpr;
 
-    public ParenExpr(@NotNull SourceLoc location, @NotNull Expr subExpr) {
-        super(location);
+    public ParenExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                     @NotNull Expr subExpr) {
+        super(startLocation, endLocation);
         this.subExpr = subExpr;
     }
 

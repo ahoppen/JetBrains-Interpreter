@@ -15,8 +15,9 @@ public class OutStmt extends Stmt {
     @NotNull
     private final Expr argument;
 
-    public OutStmt(@NotNull SourceLoc location, @NotNull Expr argument) {
-        super(location);
+    public OutStmt(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                   @NotNull Expr argument) {
+        super(startLocation, endLocation);
         this.argument = argument;
     }
 

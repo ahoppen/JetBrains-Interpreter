@@ -20,9 +20,9 @@ public class RangeExpr extends Expr {
     @NotNull private final Expr lowerBound;
     @NotNull private final Expr upperBound;
 
-    public RangeExpr(@NotNull SourceLoc location, @NotNull Expr lowerBound,
-                     @NotNull Expr upperBound) {
-        super(location);
+    public RangeExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                     @NotNull Expr lowerBound, @NotNull Expr upperBound) {
+        super(startLocation, endLocation);
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }

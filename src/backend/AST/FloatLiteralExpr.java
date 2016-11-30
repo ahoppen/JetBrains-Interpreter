@@ -12,8 +12,9 @@ import backend.utils.SourceLoc;
 public class FloatLiteralExpr extends Expr {
     private final double value;
 
-    public FloatLiteralExpr(@NotNull SourceLoc location, double value) {
-        super(location);
+    public FloatLiteralExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                            double value) {
+        super(startLocation, endLocation);
         this.value = value;
     }
 

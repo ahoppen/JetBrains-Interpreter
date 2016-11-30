@@ -19,4 +19,5 @@
 }
 .error {
     -fx-underline: true;
+    -rtfx-background-color: #fae3e3;
 }

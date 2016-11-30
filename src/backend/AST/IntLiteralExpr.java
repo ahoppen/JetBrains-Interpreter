@@ -12,8 +12,9 @@ import backend.utils.SourceLoc;
 public class IntLiteralExpr extends Expr {
     private final int value;
 
-    public IntLiteralExpr(@NotNull SourceLoc location, int value) {
-        super(location);
+    public IntLiteralExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                          int value) {
+        super(startLocation, endLocation);
         this.value = value;
     }
 

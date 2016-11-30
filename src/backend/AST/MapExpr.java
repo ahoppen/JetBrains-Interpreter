@@ -27,14 +27,15 @@ public class MapExpr extends Expr {
     @NotNull private final Expr lambda;
 
     /**
-     * @param location The location of the map keyword in the source code
+     * @param startLocation The location of the map keyword in the source code
+     * @param endLocation The location of the closing parenthesis in the source code
      * @param argument The sequence to transform
      * @param lambdaParam The variable that contains the value to transform in each lambda iteration
      * @param lambda The lambda to transform the sequence's values
      */
-    public MapExpr(@NotNull SourceLoc location, @NotNull Expr argument,
-                   @NotNull Variable lambdaParam, @NotNull Expr lambda) {
-        super(location);
+    public MapExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                   @NotNull Expr argument, @NotNull Variable lambdaParam, @NotNull Expr lambda) {
+        super(startLocation, endLocation);
         this.argument = argument;
         this.lambdaParam = lambdaParam;
         this.lambda = lambda;

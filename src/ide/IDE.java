@@ -151,7 +151,7 @@ public class IDE extends Application {
         Scene scene = new Scene(mainPane, 1024, 800);
         scene.getStylesheets().add(this.getClass().getResource("codeStyle.css").toExternalForm());
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Java Keywords Demo");
+        primaryStage.setTitle("My Language Editor");
         primaryStage.show();
     }
 
@@ -176,8 +176,9 @@ public class IDE extends Application {
         List<Highlighting> errorHighlighting = new LinkedList<>();
 
         for (Diagnostics.Error error : result.getErrors()) {
-            int errorOffset = sourceManager.getGlobalOffset(error.getLocation());
-            errorHighlighting.add(new Highlighting(errorOffset, errorOffset + 1, "error"));
+            int startOffset = sourceManager.getGlobalOffset(error.getStartLocation());
+            int endOffset = sourceManager.getGlobalOffset(error.getEndLocation());
+            errorHighlighting.add(new Highlighting(startOffset, endOffset, "error"));
             break;
         }
 

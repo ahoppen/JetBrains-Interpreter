@@ -121,14 +121,14 @@ public class CommandLineDriver {
         boolean failure = false;
         for (Diagnostics.Error error : diagnostics.getErrors()) {
             if (!verifier.matchError(error)) {
-                System.err.println("Unexpected error seen: " + error.getLocation() +
+                System.err.println("Unexpected error seen: " + error.getStartLocation() +
                         ": " + error.getMessage());
                 failure = true;
             }
         }
         for (Diagnostics.Error error : verifier.getUnseenErrors()) {
             failure = true;
-            System.err.println("Expected error not seen: " + error.getLocation() +
+            System.err.println("Expected error not seen: " + error.getStartLocation() +
                     ": " + error.getMessage());
         }
         return !failure;
@@ -136,7 +136,7 @@ public class CommandLineDriver {
 
     private static void printErrors(@NotNull Diagnostics diagnostics) {
         for (Diagnostics.Error error : diagnostics.getErrors()) {
-            System.out.println(error.getLocation() + ": " + error.getMessage());
+            System.out.println(error.getStartLocation() + ": " + error.getMessage());
         }
     }
 

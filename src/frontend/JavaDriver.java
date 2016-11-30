@@ -51,7 +51,7 @@ public class JavaDriver {
 
         Map<SourceLoc, Value> output = new HashMap<>();
         for (Map.Entry<Stmt, Value> entry : interpreter.getOutput().entrySet()) {
-            output.put(entry.getKey().getLocation(), entry.getValue());
+            output.put(entry.getKey().getStartLocation(), entry.getValue());
         }
 
         List<Diagnostics.Error> errors = diagnostics.getErrors();

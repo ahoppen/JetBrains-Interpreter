@@ -9,8 +9,8 @@ public abstract class Expr extends ASTNode {
 
     @Nullable private Type type;
 
-    public Expr(@NotNull SourceLoc location) {
-        super(location);
+    public Expr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation) {
+        super(startLocation, endLocation);
     }
 
     /**

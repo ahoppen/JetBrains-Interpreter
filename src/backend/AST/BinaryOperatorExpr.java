@@ -66,9 +66,9 @@ public class BinaryOperatorExpr extends Expr {
     @NotNull private final Operator op;
     @NotNull private final Expr rhs;
 
-    public BinaryOperatorExpr(@NotNull SourceLoc location, @NotNull Expr lhs, @NotNull Operator op,
-                              @NotNull Expr rhs) {
-        super(location);
+    public BinaryOperatorExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                              @NotNull Expr lhs, @NotNull Operator op, @NotNull Expr rhs) {
+        super(startLocation, endLocation);
         this.lhs = lhs;
         this.op = op;
         this.rhs = rhs;

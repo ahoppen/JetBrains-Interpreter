@@ -15,8 +15,9 @@ public class AssignStmt extends Stmt {
     @NotNull private final Variable lhs;
     @NotNull private final Expr rhs;
 
-    public AssignStmt(@NotNull SourceLoc location, @NotNull Variable lhs, @NotNull Expr rhs) {
-        super(location);
+    public AssignStmt(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                      @NotNull Variable lhs, @NotNull Expr rhs) {
+        super(startLocation, endLocation);
         this.lhs = lhs;
         this.rhs = rhs;
     }

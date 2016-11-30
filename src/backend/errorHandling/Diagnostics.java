@@ -11,17 +11,23 @@ import java.util.List;
 public class Diagnostics {
 
     public static class Error {
-        @NotNull private final SourceLoc location;
+        @NotNull private final SourceLoc startLocation;
+        @NotNull private final SourceLoc endLocation;
         @NotNull private final String message;
 
-        Error(@NotNull SourceLoc location, @NotNull String message) {
-            this.location = location;
+        Error(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+              @NotNull String message) {
+            this.startLocation = startLocation;
+            this.endLocation = endLocation;
             this.message = message;
         }
 
-        @NotNull
-        public SourceLoc getLocation() {
-            return location;
+        public SourceLoc getStartLocation() {
+            return startLocation;
+        }
+
+        public SourceLoc getEndLocation() {
+            return endLocation;
         }
 
         @NotNull
@@ -38,12 +44,12 @@ public class Diagnostics {
                 return false;
             }
             Error error = (Error)o;
-            return location.equals(error.location) && message.equals(error.message);
+            return startLocation.equals(error.startLocation) && message.equals(error.message);
         }
 
         @Override
         public int hashCode() {
-            int result = location.hashCode();
+            int result = startLocation.hashCode();
             result = 31 * result + message.hashCode();
             return result;
         }
@@ -53,13 +59,15 @@ public class Diagnostics {
 
     /**
      * Report an new error
-     * @param location The location where the error occurred
+     * @param startLocation The location where the error started
+     * @param endLocation The location where the error ended
      * @param error The error message. May contain placeholders for <code>args</code>
      * @param args Objects to be inserted into the error message's placeholders
      */
-    public void error(@NotNull SourceLoc location, @NotNull String error, Object... args) {
+    public void error(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                      @NotNull String error, Object... args) {
         String errorMessage = String.format(error, args);
-        errors.add(new Error(location, errorMessage));
+        errors.add(new Error(startLocation, endLocation, errorMessage));
     }
 
     /**
@@ -69,7 +77,7 @@ public class Diagnostics {
      * @param args Objects to be inserted into the error message's placeholders
      */
     public void error(@NotNull Token token, @NotNull String error, Object... args) {
-        error(token.getStartLocation(), error, args);
+        error(token.getStartLocation(), token.getEndLocation(), error, args);
     }
 
     /**
@@ -79,7 +87,7 @@ public class Diagnostics {
      * @param args Objects to be inserted into the error message's placeholders
      */
     public void error(@NotNull ASTNode astNode, @NotNull String error, Object... args) {
-        error(astNode.getLocation(), error, args);
+        error(astNode.getStartLocation(), astNode.getEndLocation(), error, args);
     }
 
     @NotNull

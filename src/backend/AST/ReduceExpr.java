@@ -30,10 +30,10 @@ public class ReduceExpr extends Expr {
     @NotNull private final Variable lambdaParam2;
     @NotNull private final Expr lambda;
 
-    public ReduceExpr(@NotNull SourceLoc location, @NotNull Expr base, @NotNull Expr sequence,
-                      @NotNull Variable lambdaParam1, @NotNull Variable lambdaParam2,
-                      @NotNull Expr lambda) {
-        super(location);
+    public ReduceExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                      @NotNull Expr base, @NotNull Expr sequence, @NotNull Variable lambdaParam1,
+                      @NotNull Variable lambdaParam2, @NotNull Expr lambda) {
+        super(startLocation, endLocation);
         this.base = base;
         this.sequence = sequence;
         this.lambdaParam1 = lambdaParam1;

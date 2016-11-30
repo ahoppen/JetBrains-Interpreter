@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import backend.utils.*;
 
 import java.io.Reader;
+import java.rmi.registry.LocateRegistry;
 
 public class Parser {
 
@@ -66,7 +67,8 @@ public class Parser {
                     case "out": {
                         Expr expr = parseExpr();
                         if (expr != null) {
-                            return new OutStmt(token.getStartLocation(), expr);
+                            return new OutStmt(token.getStartLocation(), expr.getEndLocation(),
+                                    expr);
                         } else {
                             break;
                         }
@@ -81,7 +83,8 @@ public class Parser {
                         // Consume the string token
                         consumeToken();
                         assert stringToken.getPayload() != null;
-                        return new PrintStmt(token.getStartLocation(), stringToken.getPayload());
+                        return new PrintStmt(token.getStartLocation(), stringToken.getEndLocation(),
+                                stringToken.getPayload());
                     }
                     default:
                         diagnostics.error(token, Diag.unexpected_start_of_stmt,
@@ -130,7 +133,7 @@ public class Parser {
             // Parsing the expression failed. Errors have already been reported, just return null
             return null;
         }
-        return new AssignStmt(location, variable, expr);
+        return new AssignStmt(location, expr.getEndLocation(), variable, expr);
     }
 
     private BinaryOperatorExpr.Operator getOperatorForToken(Token token) {
@@ -182,8 +185,8 @@ public class Parser {
                     if (rhs == null) {
                         return null;
                     }
-                    workingExpr = new BinaryOperatorExpr(nextToken.getStartLocation(), workingExpr,
-                            operator, rhs);
+                    workingExpr = new BinaryOperatorExpr(nextToken.getStartLocation(),
+                            nextToken.getEndLocation(), workingExpr, operator, rhs);
                 } else {
                     break;
                 }
@@ -205,14 +208,16 @@ public class Parser {
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 int value = Integer.parseInt(nextToken.getPayload());
-                return new IntLiteralExpr(nextToken.getStartLocation(), value);
+                return new IntLiteralExpr(nextToken.getStartLocation(), nextToken.getEndLocation(),
+                        value);
             }
             case FLOAT_LITERAL: {
                 consumeToken();
                 assert nextToken.getPayload() != null;
                 // We know the token's payload is a valid number
                 double value = Double.parseDouble(nextToken.getPayload());
-                return new FloatLiteralExpr(nextToken.getStartLocation(), value);
+                return new FloatLiteralExpr(nextToken.getStartLocation(),
+                        nextToken.getEndLocation(), value);
             }
             case L_PAREN: {
                 consumeToken();
@@ -220,10 +225,13 @@ public class Parser {
                 if (subExpr == null) {
                     return null;
                 }
-                if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
+                Token rParen = consumeToken();
+                if (rParen.getKind() != Token.Kind.R_PAREN) {
+                    diagnostics.error(rParen, Diag.r_paren_expected, rParen);
                     return null;
                 }
-                return new ParenExpr(nextToken.getStartLocation(), subExpr);
+                return new ParenExpr(nextToken.getStartLocation(), rParen.getEndLocation(),
+                        subExpr);
             }
             case L_BRACE: {
                 consumeToken();
@@ -238,10 +246,13 @@ public class Parser {
                 if (upperBound == null) {
                     return null;
                 }
-                if (!consumeToken(Token.Kind.R_BRACE, Diag.r_brace_expected)) {
+                Token rBrace = consumeToken();
+                if (rBrace.getKind() != Token.Kind.R_BRACE) {
+                    diagnostics.error(rBrace, Diag.r_brace_expected, rBrace);
                     return null;
                 }
-                return new RangeExpr(nextToken.getStartLocation(), lowerBound, upperBound);
+                return new RangeExpr(nextToken.getStartLocation(), rBrace.getEndLocation(),
+                        lowerBound, upperBound);
             }
             case IDENTIFIER: {
                 consumeToken();
@@ -253,7 +264,7 @@ public class Parser {
                         return parseReduceExpr(nextToken.getStartLocation());
                     default:
                         return new VariableRefExpr(nextToken.getStartLocation(),
-                                nextToken.getPayload());
+                                nextToken.getEndLocation(), nextToken.getPayload());
                 }
             }
             default: {
@@ -301,10 +312,12 @@ public class Parser {
             return null;
         }
         // ')'
-        if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
+        Token rParen = consumeToken();
+        if (rParen.getKind() != Token.Kind.R_PAREN) {
+            diagnostics.error(rParen, Diag.r_paren_expected, rParen);
             return null;
         }
-        return new MapExpr(location, argument, param, lambda);
+        return new MapExpr(location, rParen.getEndLocation(), argument, param, lambda);
     }
 
     /**
@@ -356,10 +369,13 @@ public class Parser {
             return null;
         }
         // ')'
-        if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
+        Token rParen = consumeToken();
+        if (rParen.getKind() != Token.Kind.R_PAREN) {
+            diagnostics.error(rParen, Diag.r_paren_expected, rParen);
             return null;
         }
-        return new ReduceExpr(location, base, sequence, lambdaParam1, lambdaParam2, lambda);
+        return new ReduceExpr(location, rParen.getEndLocation(), base, sequence, lambdaParam1,
+                lambdaParam2, lambda);
     }
 
     /**

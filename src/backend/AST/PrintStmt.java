@@ -20,8 +20,9 @@ public class PrintStmt extends Stmt {
     @NotNull
     private final String argument;
 
-    public PrintStmt(@NotNull SourceLoc location, @NotNull String argument) {
-        super(location);
+    public PrintStmt(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                     @NotNull String argument) {
+        super(startLocation, endLocation);
         this.argument = argument;
     }
 

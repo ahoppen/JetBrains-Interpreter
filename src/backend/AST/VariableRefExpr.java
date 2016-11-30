@@ -14,8 +14,9 @@ public class VariableRefExpr extends Expr {
     @NotNull private final String variableName;
     @Nullable private Variable referencedVariable;
 
-    public VariableRefExpr(@NotNull SourceLoc location, @NotNull String variableName) {
-        super(location);
+    public VariableRefExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,
+                           @NotNull String variableName) {
+        super(startLocation, endLocation);
         this.variableName = variableName;
     }
 

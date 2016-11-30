@@ -99,9 +99,11 @@ public class Lexer {
                             scanner.getCurrentSourceLoc());
                 }
                 default:
-                    diagnostics.error(scanner.getCurrentSourceLoc(), Diag.invalid_character,
-                            scanner.peek());
-                    return createSingeCharToken(Token.Kind.ERROR);
+                    SourceLoc location = scanner.getCurrentSourceLoc();
+                    char invalidChar = scanner.consume();
+                    diagnostics.error(location, scanner.getCurrentSourceLoc(),
+                            Diag.invalid_character, invalidChar);
+                    return new Token(Token.Kind.ERROR, location, scanner.getCurrentSourceLoc());
             }
         } catch (EOFException e) {
             return new Token(Token.Kind.EOF, scanner.getCurrentSourceLoc(),
@@ -187,7 +189,9 @@ public class Lexer {
                             numberStringBuilder.append(scanner.consume());
                             break;
                         } else {
-                            diagnostics.error(scanner.getCurrentSourceLoc(),
+                            SourceLoc dotLocation = scanner.getCurrentSourceLoc();
+                            scanner.consume();
+                            diagnostics.error(dotLocation, scanner.getCurrentSourceLoc(),
                                     Diag.two_dots_in_number_literal);
                             scanner.consumeCharactersInString("0123456789.");
                             return new Token(Token.Kind.ERROR, location,
@@ -201,7 +205,8 @@ public class Lexer {
         }
         String numberString = numberStringBuilder.toString();
         if (numberString.equals(".") || numberString.equals("-.")) {
-            diagnostics.error(location, Diag.single_dot_no_number_literal);
+            diagnostics.error(location, scanner.getCurrentSourceLoc(),
+                    Diag.single_dot_no_number_literal);
             return new Token(Token.Kind.ERROR, location, scanner.getCurrentSourceLoc());
         }
         return new Token(kind, numberStringBuilder.toString(), location,
@@ -234,7 +239,8 @@ public class Lexer {
                         sb.append(escapedCharacter);
                     } else {
                         // The escape sequence wasn't valid, issue an error, skip it and continue
-                        diagnostics.error(lastLocation, Diag.unknown_escape_sequence, c);
+                        diagnostics.error(lastLocation, scanner.getCurrentSourceLoc(),
+                                Diag.unknown_escape_sequence, c);
                     }
                     escapedMode = false;
                 } else {
@@ -248,7 +254,8 @@ public class Lexer {
                         if (c == '\n' || c == '\r') {
                             // Reached end of line, just assume the string is terminated and
                             // return it
-                            diagnostics.error(location, Diag.eol_before_string_terminated);
+                            diagnostics.error(location, scanner.getCurrentSourceLoc(),
+                                    Diag.eol_before_string_terminated);
                             return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location,
                                     scanner.getCurrentSourceLoc());
                         }
@@ -260,7 +267,8 @@ public class Lexer {
                 c = scanner.consume();
             } while (true);
         } catch (EOFException e) {
-            diagnostics.error(location, Diag.eof_before_string_terminated);
+            diagnostics.error(location, scanner.getCurrentSourceLoc(),
+                    Diag.eof_before_string_terminated);
             return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location,
                     scanner.getCurrentSourceLoc());
         }

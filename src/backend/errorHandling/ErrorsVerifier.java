@@ -35,7 +35,10 @@ public class ErrorsVerifier {
             int expectedErrorColumn = Integer.parseInt(column);
 
             SourceLoc expectedErrorLoc = new SourceLoc(expectedErrorLine, expectedErrorColumn);
-            expectedErrors.put(new Diagnostics.Error(expectedErrorLoc, message), false);
+            // We don't care about the error's length when verifying errors
+            Diagnostics.Error expectedError = new Diagnostics.Error(expectedErrorLoc,
+                    expectedErrorLoc, message);
+            expectedErrors.put(expectedError, false);
         }
     }
 

@@ -6,15 +6,23 @@ import backend.utils.SourceLoc;
 
 public abstract class ASTNode {
 
-    @NotNull private final SourceLoc location;
+    @NotNull private final SourceLoc startLocation;
+    @NotNull private final SourceLoc endLocation;
 
-    public ASTNode(@NotNull SourceLoc location) {
-        this.location = location;
+    public ASTNode(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation) {
+        this.startLocation = startLocation;
+        this.endLocation = endLocation;
+    }
+
+
+    @NotNull
+    public SourceLoc getStartLocation() {
+        return startLocation;
     }
 
     @NotNull
-    public SourceLoc getLocation() {
-        return location;
+    public SourceLoc getEndLocation() {
+        return endLocation;
     }
 
     public abstract <T> T acceptVisitor(ASTVisitor<T> visitor);
