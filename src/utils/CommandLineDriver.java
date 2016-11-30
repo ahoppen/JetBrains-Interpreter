@@ -142,6 +142,10 @@ public class CommandLineDriver {
                 " pass [-verify] inputFile");
         System.out.println("pass can be:");
         System.out.println("-lex        Print the input file's tokens");
+        System.out.println("-parser     Parse the source code and print its AST");
+        System.out.println("-typeCheck  Parse the source code, resolve variables, do basic type");
+        System.out.println("            checking and print the AST");
+        System.out.println("-evaluate   Evaluate the source code and print its output");
         System.out.println();
         System.out.println("If -verify is specified errors are verified with their descriptions" +
                 "in the comments");

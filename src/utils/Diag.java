@@ -46,12 +46,12 @@ public abstract class Diag {
     public static final String argument_of_map_not_sequence = "Argument for 'map' must be a sequence, '%s' given";
     public static final String argument_of_reduce_not_sequence = "First argument for 'reduce' must be a sequence, '%s' given";
     public static final String lambda_of_reduce_does_not_return_base_type = "The lambda of 'reduce' must return the same type as the base element ('%s'). Got '%s'";
-    public static final String lower_bound_of_range_not_int = "Lower bound of a range must be an integer and not '%s'";
-    public static final String upper_bound_of_range_not_int = "Upper bound of a range must be an integer and not '%s'";
 
     // ==========================
     // Runtime
     // ==========================
 
     public static final String range_upper_bound_smaller_than_lower_bound = "Upper bound of range cannot be smaller than the lower bound";
+    public static final String lower_bound_of_range_not_int = "Lower bound of a range must be an integer and not '%s'";
+    public static final String upper_bound_of_range_not_int = "Upper bound of a range must be an integer and not '%s'";
 }

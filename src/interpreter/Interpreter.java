@@ -217,18 +217,18 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         }
         if (!(lowerBoundValue instanceof IntValue)) {
             Diagnostics.error(rangeExpr.getLowerBound(), Diag.lower_bound_of_range_not_int,
-                    rangeExpr.getLowerBound().getType());
+                    "Float");
             return ErrorValue.get();
         }
         if (!(upperBoundValue instanceof IntValue)) {
-            Diagnostics.error(rangeExpr.getUpperBound(), Diag.lower_bound_of_range_not_int,
-                    rangeExpr.getUpperBound().getType());
+            Diagnostics.error(rangeExpr.getUpperBound(), Diag.upper_bound_of_range_not_int,
+                    "Float");
             return ErrorValue.get();
         }
         int lowerBound = ((IntValue)lowerBoundValue).getValue();
         int upperBound = ((IntValue)upperBoundValue).getValue();
 
-        if (upperBound <= lowerBound) {
+        if (upperBound < lowerBound) {
             Diagnostics.error(rangeExpr, Diag.range_upper_bound_smaller_than_lower_bound);
             return ErrorValue.get();
         }
