@@ -11,6 +11,7 @@ public abstract class Diag {
     public static final String eol_before_string_terminated = "Found end of line before string literal was terminated";
     public static final String eof_before_string_terminated = "Reached end of file before string literal was terminated";
     public static final String invalid_character = "'%s' is an invalid character at this position";
+    public static final String single_dot_no_number_literal = "A single dot is no number literal";
 
     // ==========================
     // Parser

@@ -133,9 +133,9 @@ public class Lexer {
 
     private Token lexNumberLiteral(boolean negative) {
         SourceLoc location = scanner.getCurrentSourceLoc();
-        StringBuilder numberString = new StringBuilder();
+        StringBuilder numberStringBuilder = new StringBuilder();
         if (negative) {
-            numberString.append("-");
+            numberStringBuilder.append("-");
         }
         Token.Kind kind = Token.Kind.INT_LITERAL;
         try {
@@ -143,12 +143,12 @@ public class Lexer {
                 switch (scanner.peek()) {
                     case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
                     case '8': case '9':
-                        numberString.append(scanner.consume());
+                        numberStringBuilder.append(scanner.consume());
                         break;
                     case '.':
                         if (kind == Token.Kind.INT_LITERAL) {
                             kind = Token.Kind.FLOAT_LITERAL;
-                            numberString.append(scanner.consume());
+                            numberStringBuilder.append(scanner.consume());
                             break;
                         } else {
                             Diagnostics.error(scanner.getCurrentSourceLoc(),
@@ -162,7 +162,12 @@ public class Lexer {
             }
         } catch (EOFException ignored) {
         }
-        return new Token(kind, numberString.toString(), location);
+        String numberString = numberStringBuilder.toString();
+        if (numberString.equals(".") || numberString.equals("-.")) {
+            Diagnostics.error(location, Diag.single_dot_no_number_literal);
+            return new Token(Token.Kind.ERROR, location);
+        }
+        return new Token(kind, numberStringBuilder.toString(), location);
     }
 
     private Token lexStringLiteral() {
