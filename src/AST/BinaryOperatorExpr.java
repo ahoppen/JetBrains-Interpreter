@@ -1,8 +1,6 @@
 package AST;
 
-import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import utils.ASTVisitor;
 import utils.SourceLoc;
 

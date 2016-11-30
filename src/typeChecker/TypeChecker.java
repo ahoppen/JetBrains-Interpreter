@@ -12,7 +12,7 @@ import utils.Diagnostics;
 
 public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
-    @NotNull private ASTConsumer nextConsumer;
+    @NotNull private final ASTConsumer nextConsumer;
     @NotNull private VariableScope variableScope = new VariableScope(null);
 
     public TypeChecker(@NotNull ASTConsumer nextConsumer) {

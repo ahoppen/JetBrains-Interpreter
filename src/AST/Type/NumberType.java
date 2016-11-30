@@ -2,7 +2,7 @@ package AST.Type;
 
 public class NumberType extends Type {
 
-    private static NumberType INSTANCE = new NumberType();
+    private static final NumberType INSTANCE = new NumberType();
 
     private NumberType() {}
 

@@ -1,7 +1,6 @@
 package interpreter;
 
 import org.jetbrains.annotations.NotNull;
-import utils.Diagnostics;
 
 public class ErrorValue extends Value {
 

@@ -169,8 +169,7 @@ public class Lexer {
         SourceLoc location = scanner.getCurrentSourceLoc();
         StringBuilder sb = new StringBuilder();
         try {
-            boolean quotConsumed = scanner.consumeIf('"');
-            assert quotConsumed : "Haven't we read a quotation mark?";
+            scanner.consume();
 
             boolean escapedMode = false;
             char c = scanner.consume();

@@ -56,16 +56,6 @@ class Scanner {
         return c;
     }
 
-    boolean consumeIf(char c) throws EOFException {
-        fillBuffer(1);
-        if (buffer.peek() == c) {
-            buffer.pop();
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     /**
      * Consider the string as a set and consume characters for as long as they are in this set
      * @param s The set of characters that should be consumed

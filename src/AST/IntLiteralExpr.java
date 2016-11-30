@@ -1,7 +1,5 @@
 package AST;
 
-import AST.Type.IntType;
-import AST.Type.Type;
 import org.jetbrains.annotations.NotNull;
 import utils.ASTVisitor;
 import utils.SourceLoc;

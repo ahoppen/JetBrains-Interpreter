@@ -2,7 +2,6 @@ package parser;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.omg.CORBA.PUBLIC_MEMBER;
 import utils.SourceLoc;
 
 public class Token {
