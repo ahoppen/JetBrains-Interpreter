@@ -1,11 +1,11 @@
 package ide;
 
+import frontend.JavaDriver;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import javafx.util.Pair;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
@@ -16,7 +16,10 @@ import org.reactfx.EventStreams;
 import org.reactfx.util.Tuple2;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -85,7 +88,7 @@ public class IDE extends Application {
 
         EventSource<List<Highlighting>> errorsStream = new EventSource<>();
         EventSource<String> resultsStream = new EventSource<>();
-        codeArea.plainTextChanges()
+        EventStream<JavaDriver.EvaluationResult> evaluationResult = codeArea.plainTextChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
                 .successionEnds(Duration.ofMillis(500))
                 .supplyTask(this::evaluateCodeAsync)
@@ -96,11 +99,15 @@ public class IDE extends Application {
                     } else {
                         return Optional.empty();
                     }
-                })
-                .subscribe(value -> {
-                    errorsStream.push(value.getKey());
-                    resultsStream.push(value.getValue());
                 });
+        evaluationResult
+                .map(JavaDriver.EvaluationResult::getErrors)
+                .map(errors -> Evaluation.getErrorHighlighting(errors, codeArea.getText()))
+                .subscribe(errorsStream::push);
+        evaluationResult
+                .map(JavaDriver.EvaluationResult::getOutput)
+                .map(output -> Evaluation.getResultsAreaText(output, codeArea.getText()))
+                .subscribe(resultsStream::push);
 
         codeArea.plainTextChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
@@ -110,6 +117,7 @@ public class IDE extends Application {
             resultsArea.clear();
             resultsArea.appendText(results);
         });
+
 
         EventStreams.combine(syntaxHighlighting, errorsStream)
                 .mapToTask(this::computeStyleSpans)
@@ -124,8 +132,8 @@ public class IDE extends Application {
                 .subscribe(spans -> codeArea.setStyleSpans(0, spans));
     }
 
-    private Task<Pair<List<Highlighting>, String>> evaluateCodeAsync() {
-        return performOnSourceCode(Evaluation::evaluateCode);
+    private Task<JavaDriver.EvaluationResult> evaluateCodeAsync() {
+        return performOnSourceCode(JavaDriver::evaluate);
     }
 
     private Task<List<Highlighting>> computeSyntaxHighlightingAsync() {

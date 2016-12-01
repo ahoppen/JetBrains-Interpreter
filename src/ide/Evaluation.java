@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class Evaluation {
+class Evaluation {
 
     @Nullable
     private static String getStyleNameForToken(@NotNull Token token) {
@@ -75,15 +75,29 @@ public class Evaluation {
         return syntaxHighlighting;
     }
 
-
-    static Pair<List<Highlighting>, String> evaluateCode(@NotNull String sourceCode) {
+    static List<Highlighting> getErrorHighlighting(@NotNull List<Diagnostics.Error> errors,
+                                                   @NotNull String sourceCode) {
         SourceManager sourceManager = new SourceManager(sourceCode);
 
-        JavaDriver.EvaluationResult result = JavaDriver.evaluate(sourceCode);
+        List<Highlighting> errorHighlighting = new LinkedList<>();
+
+        for (Diagnostics.Error error : errors) {
+            int startOffset = sourceManager.getGlobalOffset(error.getStartLocation());
+            int endOffset = sourceManager.getGlobalOffset(error.getEndLocation());
+            errorHighlighting.add(new Highlighting(startOffset, endOffset, "error"));
+        }
+
+        return errorHighlighting;
+    }
+
+    static String getResultsAreaText(@NotNull Map<SourceLoc, Value> evaluationResult,
+                                     @NotNull String sourceCode) {
+        SourceManager sourceManager = new SourceManager(sourceCode);
 
         StringBuilder resultsText = new StringBuilder();
         int currentLine = 1;
-        List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(result.getOutput().entrySet());
+
+        List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(evaluationResult.entrySet());
         outputs.sort(Comparator.comparing(Map.Entry::getKey));
         for (Map.Entry<SourceLoc, Value> output : outputs) {
             while (currentLine < output.getKey().getLine()) {
@@ -101,14 +115,6 @@ public class Evaluation {
             currentLine++;
         }
 
-        List<Highlighting> errorHighlighting = new LinkedList<>();
-
-        for (Diagnostics.Error error : result.getErrors()) {
-            int startOffset = sourceManager.getGlobalOffset(error.getStartLocation());
-            int endOffset = sourceManager.getGlobalOffset(error.getEndLocation());
-            errorHighlighting.add(new Highlighting(startOffset, endOffset, "error"));
-        }
-
-        return new Pair<>(errorHighlighting, resultsText.toString());
+        return resultsText.toString();
     }
 }
