@@ -8,6 +8,7 @@ import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * Interprets the statements it consumes, saving the output of each statement in a map that can be
@@ -379,12 +380,39 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         }
 
         Value[] values = new Value[upperBound - lowerBound + 1];
-        int arrayIndex = 0;
-        for (int i = lowerBound; i <= upperBound; i++) {
-            IntValue v = createIntValue(i);
-            values[arrayIndex] = v;
-            arrayIndex++;
+
+        final int numberOfThreads = Runtime.getRuntime().availableProcessors();
+
+        int valuesPerThread = values.length / numberOfThreads;
+
+        Thread[] threads = new Thread[numberOfThreads];
+        for (int j = 0; j < numberOfThreads; j++) {
+            final int finalJ = j;
+            threads[j] = new Thread(() -> {
+                int arrayIndex = finalJ * valuesPerThread;
+                int from = lowerBound + finalJ * valuesPerThread;
+                int to;
+                if (finalJ == numberOfThreads - 1) {
+                    to = upperBound;
+                } else {
+                    to = from + valuesPerThread - 1;
+                }
+                for (int i = from; i <= to; i++) {
+                    values[arrayIndex] = new IntValue(i);
+                    arrayIndex++;
+                }
+            });
+            threads[j].start();
         }
+
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
+            }
+        }
+
         return new SequenceValue(values);
     }
 
