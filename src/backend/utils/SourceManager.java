@@ -42,4 +42,11 @@ public class SourceManager {
         }
         return offset + location.getColumn() - 1;
     }
+
+    /**
+     * @return The number of lines in the source code
+     */
+    public int getNumberOfLines() {
+        return lineLengths.size();
+    }
 }

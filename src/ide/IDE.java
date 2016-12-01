@@ -10,9 +10,9 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
-import org.fxmisc.richtext.model.StyleSpan;
 import org.fxmisc.richtext.model.StyleSpans;
 import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -28,9 +28,7 @@ public class IDE extends Application {
         final Set<String> style;
 
         public Highlighting(int startOffset, int endOffset, Set<String> style) {
-            if (startOffset > endOffset) {
-                System.err.print("xx");
-            }
+            assert startOffset <= endOffset;
             this.startOffset = startOffset;
             this.endOffset = endOffset;
             this.style = style;
@@ -139,13 +137,17 @@ public class IDE extends Application {
                     evaluateCode();
                     codeArea.setStyleSpans(0, computeStylesSpans(mergeHighlighting(syntaxHighlighting, errors)));
                 });
+        VirtualizedScrollPane<CodeArea> codeScrollPane = new VirtualizedScrollPane<>(codeArea);
 
         resultsArea = new CodeArea();
         resultsArea.setEditable(false);
         resultsArea.setPrefWidth(200);
         resultsArea.setStyle("-fx-background-color: #eee");
+        VirtualizedScrollPane<CodeArea> resultsScrollPane = new VirtualizedScrollPane<>(resultsArea);
+        codeScrollPane.estimatedScrollYProperty().bindBidirectional(
+                resultsScrollPane.estimatedScrollYProperty());
 
-        BorderPane mainPane = new BorderPane(codeArea);
+        BorderPane mainPane = new BorderPane(codeScrollPane);
         mainPane.setRight(resultsArea);
 
         Scene scene = new Scene(mainPane, 1024, 800);
@@ -172,6 +174,10 @@ public class IDE extends Application {
             // FIXME: Handle newlines in the output
             resultsArea.appendText(output.getValue().toString());
         }
+        while (currentLine <= sourceManager.getNumberOfLines()) {
+            resultsArea.appendText("\n");
+            currentLine++;
+        }
 
         List<Highlighting> errorHighlighting = new LinkedList<>();
 
@@ -179,7 +185,6 @@ public class IDE extends Application {
             int startOffset = sourceManager.getGlobalOffset(error.getStartLocation());
             int endOffset = sourceManager.getGlobalOffset(error.getEndLocation());
             errorHighlighting.add(new Highlighting(startOffset, endOffset, "error"));
-            break;
         }
 
         this.errors = errorHighlighting;
