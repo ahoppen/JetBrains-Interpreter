@@ -21,3 +21,8 @@
     -fx-underline: true;
     -rtfx-background-color: #fae3e3;
 }
+#errorPopup {
+    -fx-background-color: black;
+    -fx-text-fill: white;
+    -fx-padding: 5;
+}

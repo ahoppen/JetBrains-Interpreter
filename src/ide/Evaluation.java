@@ -6,9 +6,6 @@ import backend.parser.Token;
 import backend.utils.SourceLoc;
 import backend.utils.SourceManager;
 import frontend.JavaDriver;
-import javafx.util.Pair;
-import org.fxmisc.richtext.model.StyleSpans;
-import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

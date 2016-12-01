@@ -1,15 +1,23 @@
 package ide;
 
+import backend.errorHandling.Diagnostics;
+import backend.utils.SourceManager;
 import frontend.JavaDriver;
 import javafx.application.Application;
 import javafx.concurrent.Task;
+import javafx.geometry.Point2D;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.MouseOverTextEvent;
+import org.fxmisc.richtext.PopupAlignment;
 import org.fxmisc.richtext.model.StyleSpans;
+import org.jetbrains.annotations.NotNull;
 import org.reactfx.EventSource;
 import org.reactfx.EventStream;
 import org.reactfx.EventStreams;
@@ -38,17 +46,22 @@ public class IDE extends Application {
             "out pi"
     });
 
+    private Stage stage;
     private CodeArea codeArea;
+    private Popup errorPopup;
+    private Label errorMessageLabel;
     private CodeArea resultsArea;
     private ExecutorService executor;
+    private List<Diagnostics.Error> errorMessages = new ArrayList<>(0);
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage stage) {
+        this.stage = stage;
+
         executor = Executors.newCachedThreadPool();
 
         codeArea = new CodeArea();
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
-        codeArea.replaceText(0, 0, sampleCode);
 
         VirtualizedScrollPane<CodeArea> codeScrollPane = new VirtualizedScrollPane<>(codeArea);
 
@@ -65,11 +78,65 @@ public class IDE extends Application {
 
         Scene scene = new Scene(mainPane, 1024, 800);
         scene.getStylesheets().add(this.getClass().getResource("codeStyle.css").toExternalForm());
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("My Language Editor");
-        primaryStage.show();
+        stage.setScene(scene);
+        stage.setTitle("My Language Editor");
+        stage.show();
+
+        errorPopup = new Popup();
+        errorMessageLabel = new Label();
+        errorMessageLabel.setId("errorPopup");
+        errorPopup.getContent().add(errorMessageLabel);
+        codeArea.setPopupWindow(errorPopup);
+        codeArea.setPopupAlignment(PopupAlignment.SELECTION_BOTTOM_CENTER);
+
+        codeArea.setMouseOverTextDelay(Duration.ofMillis(100));
+        codeArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, event -> {
+            int hoveredOffset = event.getCharacterIndex();
+            Point2D pos = event.getScreenPosition();
+
+            SourceManager sourceManager = new SourceManager(codeArea.getText());
+
+            String errorMessage = getErrorMessage(sourceManager, hoveredOffset);
+
+            if (errorMessage != null) {
+                errorMessageLabel.setText(errorMessage);
+                errorPopup.show(codeArea, pos.getX(), pos.getY() + 10);
+            } else {
+                errorPopup.hide();
+            }
+        });
+        codeArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> errorPopup.hide());
+
+        codeArea.caretPositionProperty().addListener((observable, oldValue, newValue) -> {
+            showOrHidePopup(newValue);
+        });
 
         setUpEventStreams();
+
+        codeArea.replaceText(0, 0, sampleCode);
+    }
+
+    private void showOrHidePopup(int caretPosition) {
+        SourceManager sourceManager = new SourceManager(codeArea.getText());
+        String errorMessage = getErrorMessage(sourceManager, caretPosition);
+
+        if (errorMessage != null) {
+            errorMessageLabel.setText(errorMessage);
+            errorPopup.show(stage);
+        } else {
+            errorPopup.hide();
+        }
+    }
+
+    private String getErrorMessage(@NotNull SourceManager sourceManager, int atOffset) {
+        String errorMessage = null;
+        for (Diagnostics.Error error : errorMessages) {
+            if (sourceManager.getGlobalOffset(error.getStartLocation()) <= atOffset &&
+                    atOffset <= sourceManager.getGlobalOffset(error.getEndLocation())) {
+                errorMessage = error.getMessage();
+            }
+        }
+        return errorMessage;
     }
 
     private void setUpEventStreams() {
@@ -100,14 +167,23 @@ public class IDE extends Application {
                         return Optional.empty();
                     }
                 });
+
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getErrors)
                 .map(errors -> Evaluation.getErrorHighlighting(errors, codeArea.getText()))
                 .subscribe(errorsStream::push);
+
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getOutput)
                 .map(output -> Evaluation.getResultsAreaText(output, codeArea.getText()))
                 .subscribe(resultsStream::push);
+
+        evaluationResult
+                .map(JavaDriver.EvaluationResult::getErrors)
+                .subscribe(errors -> {
+                    this.errorMessages = errors;
+                    showOrHidePopup(codeArea.getCaretPosition());
+                });
 
         codeArea.plainTextChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
