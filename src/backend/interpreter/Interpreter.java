@@ -203,8 +203,9 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         SequenceValue toTransform = (SequenceValue)argument;
 
         // Accumulate the transformed values in this list
-        List<Value> transformedValues = new ArrayList<>(toTransform.getValues().size());
+        Value[] transformedValues = new Value[toTransform.getValues().length];
 
+        int i = 0;
         for (Value value : toTransform.getValues()) {
             // Set the variable's value and evaluate the expression with this value
             variableValues.put(mapExpr.getLambdaParam(), value);
@@ -212,7 +213,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             if (transformedValue instanceof ErrorValue) {
                 return ErrorValue.get();
             }
-            transformedValues.add(transformedValue);
+            transformedValues[i] = transformedValue;
+            i++;
         }
 
         // The lambda param is no longer valid after the lambda's scope -> remove it
@@ -261,9 +263,11 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             return ErrorValue.get();
         }
 
-        ArrayList<Value> values = new ArrayList<>(upperBound - lowerBound);
+        Value[] values = new Value[upperBound - lowerBound + 1];
+        int arrayIndex = 0;
         for (int i = lowerBound; i <= upperBound; i++) {
-            values.add(new IntValue(i));
+            values[arrayIndex] = new IntValue(i);
+            arrayIndex++;
         }
         return new SequenceValue(values);
     }

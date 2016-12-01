@@ -9,15 +9,14 @@ import java.util.List;
  */
 public class SequenceValue extends Value {
 
-    // FIXME: Could the values be stored in a plain array since we know the size?
-    @NotNull private final List<Value> values;
+    @NotNull private final Value[] values;
 
-    SequenceValue(@NotNull List<Value> values) {
+    SequenceValue(@NotNull Value[] values) {
         this.values = values;
     }
 
     @NotNull
-    public List<Value> getValues() {
+    public Value[] getValues() {
         return values;
     }
 
