@@ -8,6 +8,7 @@ import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 /**
@@ -15,6 +16,11 @@ import java.util.stream.IntStream;
  * retrieved using {@link #getOutput()}
  */
 public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
+
+    @FunctionalInterface
+    interface Function3<A, B, C, R> {
+        public R apply (A a, B b, C c);
+    }
 
     @NotNull private final Diagnostics diagnostics;
 
@@ -255,7 +261,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         Value value = variableValues.get(variableRefExpr.getReferencedVariable());
         if (value == null) {
             throw new RuntimeException("Variable " + variableRefExpr.getReferencedVariable() +
-                    "has no value although the type checker should have enforced it");
+                    " has no value although the type checker should have enforced it");
         } else {
             return value;
         }
@@ -425,9 +431,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
     @Override
     public Value visitReduceExpr(ReduceExpr reduceExpr) {
-        // TODO: Implement this with multiple threads
-        Value currentValue = evaluateExpr(reduceExpr.getBase());
-        if (currentValue instanceof ErrorValue) {
+        Value baseValue = evaluateExpr(reduceExpr.getBase());
+        if (baseValue instanceof ErrorValue) {
             return ErrorValue.get();
         }
 
@@ -438,21 +443,87 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         // The type checker guarantees this is a sequence
         SequenceValue toTransform = (SequenceValue)argument;
 
-        for (Value value : toTransform.getValues()) {
-            // Inject the lambda parameter's values and evaluate the value to calculate the new
-            // current value
-            variableValues.put(reduceExpr.getLambdaParam1(), currentValue);
-            variableValues.put(reduceExpr.getLambdaParam2(), value);
-            currentValue = evaluateExpr(reduceExpr.getLambda());
+        final int numberOfThreads = Runtime.getRuntime().availableProcessors();
+        int valuesPerThread = toTransform.getValues().length / numberOfThreads;
+        Value[] resultsOfThreads = new Value[numberOfThreads];
 
-            if (currentValue instanceof ErrorValue) {
-                return ErrorValue.get();
+        boolean[] errorOccurred = new boolean[] {false};
+
+        Function3<Interpreter, Value, Value, Value> applyLambda = (interpreter, x, y) -> {
+            interpreter.variableValues.put(reduceExpr.getLambdaParam1(), x);
+            interpreter.variableValues.put(reduceExpr.getLambdaParam2(), y);
+            return interpreter.evaluateExpr(reduceExpr.getLambda());
+        };
+
+        if (valuesPerThread <= 2) {
+            // Most threads wouldn't even do a single lambda execution. Just do everything on the
+            // main thread
+            Value currentValue = baseValue;
+
+            Interpreter subInterpreter = new Interpreter(diagnostics);
+
+            for (Value value : toTransform.getValues()) {
+                currentValue = applyLambda.apply(subInterpreter, currentValue, value);
+
+                if (currentValue instanceof ErrorValue) {
+                    return ErrorValue.get();
+                }
+            }
+
+            return currentValue;
+        }
+
+        Thread[] threads = new Thread[numberOfThreads];
+        for (int j = 0; j < numberOfThreads; j++) {
+            final int finalJ = j;
+            threads[j] = new Thread(() -> {
+                Interpreter subInterpreter = new Interpreter(diagnostics);
+                Value[] values = toTransform.getValues();
+
+                int from = finalJ * valuesPerThread;
+                int to;
+                if (finalJ == numberOfThreads - 1) {
+                    to = values.length;
+                } else {
+                    to = from + valuesPerThread;
+                }
+
+                Value currentValue = applyLambda.apply(subInterpreter, values[from],
+                        values[from + 1]);
+                if (currentValue instanceof ErrorValue) {
+                    errorOccurred[0] = true;
+                    return;
+                }
+
+                for (int i = from + 2; i < to; i++) {
+                    currentValue = applyLambda.apply(subInterpreter, currentValue, values[i]);
+                    if (currentValue instanceof ErrorValue) {
+                        errorOccurred[0] = true;
+                        return;
+                    }
+                }
+                resultsOfThreads[finalJ] = currentValue;
+            });
+            threads[j].start();
+        }
+
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
             }
         }
 
-        // The lambda parameter's values are no longer valid after the lambda's scope -> remove them
-        variableValues.remove(reduceExpr.getLambdaParam1());
-        variableValues.remove(reduceExpr.getLambdaParam2());
+        if (errorOccurred[0]) {
+            return ErrorValue.get();
+        }
+
+        Interpreter subInterpreter = new Interpreter(diagnostics);
+        Value currentValue = baseValue;
+        for (Value value : resultsOfThreads) {
+            currentValue = applyLambda.apply(subInterpreter, currentValue, value);
+        }
 
         return currentValue;
     }

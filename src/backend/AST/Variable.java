@@ -40,4 +40,9 @@ public class Variable {
     public void setType(@NotNull Type type) {
         this.type = type;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
