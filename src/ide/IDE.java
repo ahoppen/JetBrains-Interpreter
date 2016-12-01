@@ -171,8 +171,11 @@ public class IDE extends Application {
                 resultsArea.appendText("\n");
                 currentLine++;
             }
-            // FIXME: Handle newlines in the output
-            resultsArea.appendText(output.getValue().toString());
+            String outputString = output.getValue().toString();
+            // Replace newlines with their escape sequence since there is only one line to display
+            // one statement's output
+            outputString = outputString.replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r");
+            resultsArea.appendText(outputString);
         }
         while (currentLine <= sourceManager.getNumberOfLines()) {
             resultsArea.appendText("\n");
