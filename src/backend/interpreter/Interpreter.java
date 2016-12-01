@@ -282,6 +282,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         boolean valuesRecyclable = argument.isRecyclable();
 
         final int numberOfThreads = Runtime.getRuntime().availableProcessors();
+        int valuesPerThread = toTransform.getValues().length / numberOfThreads;
 
         Thread[] threads = new Thread[numberOfThreads];
         for (int j = 0; j < numberOfThreads; j++) {
@@ -289,31 +290,37 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             threads[j] = new Thread(() -> {
                 Interpreter subInterpreter = new Interpreter(diagnostics);
                 Value[] values = toTransform.getValues();
-                int size = values.length;
-                for (int i = 0; i < size; i++) {
-                    Value value = values[i];
-                    if (i % numberOfThreads == finalJ) {
-                        // The value is used as a variable in the lambda and can thus not be
-                        // recycled while evaluating the lambda
-                        value.setRecyclable(false);
-                        subInterpreter.variableValues.put(mapExpr.getLambdaParam(), value);
-                        // Set the variable's value and evaluate the expression with this value
-                        Value transformedValue = subInterpreter.evaluateExpr(mapExpr.getLambda());
-                        if (transformedValue instanceof ErrorValue) {
-                            errorOccurred[0] = true;
-                            break;
-                        }
-                        transformedValues[i] = transformedValue;
 
-                        // Recycle the value in the subInterpreter since it tends to need the value
-                        // for the next lambda execution
-                        if (valuesRecyclable) {
-                            value.setRecyclable(true);
-                            if (value instanceof IntValue) {
-                                subInterpreter.recycle((IntValue)value);
-                            } else if (value instanceof FloatValue) {
-                                subInterpreter.recycle((FloatValue)value);
-                            }
+                int from = finalJ * valuesPerThread;
+                int to;
+                if (finalJ == numberOfThreads - 1) {
+                    to = values.length;
+                } else {
+                    to = from + valuesPerThread;
+                }
+
+                for (int i = from; i < to; i++) {
+                    Value value = values[i];
+                    // The value is used as a variable in the lambda and can thus not be
+                    // recycled while evaluating the lambda
+                    value.setRecyclable(false);
+                    subInterpreter.variableValues.put(mapExpr.getLambdaParam(), value);
+                    // Set the variable's value and evaluate the expression with this value
+                    Value transformedValue = subInterpreter.evaluateExpr(mapExpr.getLambda());
+                    if (transformedValue instanceof ErrorValue) {
+                        errorOccurred[0] = true;
+                        break;
+                    }
+                    transformedValues[i] = transformedValue;
+
+                    // Recycle the value in the subInterpreter since it tends to need the value
+                    // for the next lambda execution
+                    if (valuesRecyclable) {
+                        value.setRecyclable(true);
+                        if (value instanceof IntValue) {
+                            subInterpreter.recycle((IntValue)value);
+                        } else if (value instanceof FloatValue) {
+                            subInterpreter.recycle((FloatValue)value);
                         }
                     }
                 }
