@@ -22,8 +22,68 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
     /** The output of all statements consumed so far */
     @NotNull private final Map<Stmt, Value> output = new LinkedHashMap<>();
 
+    /**
+     * Constantly allocating new objects for values is inefficient as it triggers the garbage
+     * collector. Thus add values that are no longer used to these Stacks from which they can be
+     * recycled
+     */
+    private Stack<IntValue> recycledIntValues = new Stack<>();
+    private Stack<FloatValue> recycledFloatValues = new Stack<>();
+
     public Interpreter(@NotNull Diagnostics diagnostics) {
         this.diagnostics = diagnostics;
+    }
+
+    /**
+     * Create a new {@link IntValue} either from the recycling bag or by allocating a new object
+     * @param value The payload of the {@link IntValue}
+     * @return An {@link IntValue} with the given value
+     */
+    private IntValue createIntValue(int value) {
+        if (!recycledIntValues.empty()) {
+            IntValue recycledValue = recycledIntValues.pop();
+            recycledValue.setValue(value);
+            return recycledValue;
+        } else {
+            return new IntValue(value);
+        }
+    }
+
+    /**
+     * Recycle an {@link IntValue} if it has been marked as recyclable. If the value is recyclable
+     * referencing it after it has been recycled results in undefined behaviour.
+     * @param value The value to recycle
+     */
+    private void recycle(IntValue value) {
+        if (value.isRecyclable()) {
+            recycledIntValues.push(value);
+        }
+    }
+
+    /**
+     * Create a new {@link FloatValue} either from the recycling bag or by allocating a new object
+     * @param value The payload of the {@link FloatValue}
+     * @return An {@link FloatValue} with the given value
+     */
+    private FloatValue createFloatValue(double value) {
+        if (!recycledFloatValues.empty()) {
+            FloatValue recycledValue = recycledFloatValues.pop();
+            recycledValue.setValue(value);
+            return recycledValue;
+        } else {
+            return new FloatValue(value);
+        }
+    }
+
+    /**
+     * Recycle an {@link FloatValue} if it has been marked as recyclable. If the value is recyclable
+     * referencing it after it has been recycled results in undefined behaviour.
+     * @param value The value to recycle
+     */
+    private void recycle(FloatValue value) {
+        if (value.isRecyclable()) {
+            recycledFloatValues.push(value);
+        }
     }
 
     @Override
@@ -47,6 +107,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
     @Override
     public Value visitAssignStmt(AssignStmt assignStmt) {
         Value value = evaluateExpr(assignStmt.getRhs());
+        value.setRecyclable(false);
         variableValues.put(assignStmt.getLhs(), value);
         return null;
     }
@@ -80,8 +141,10 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                         value = lhsValue / rhsValue;
                         break;
                     } else {
+                        recycle((IntValue)lhs);
+                        recycle((IntValue)rhs);
                         double doubleValue = (double)lhsValue / rhsValue;
-                        return new FloatValue(doubleValue);
+                        return createFloatValue(doubleValue);
                     }
                 }
                 case POW: {
@@ -92,14 +155,18 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                         value = (int)Math.pow(base, exponent);
                         break;
                     } else {
+                        recycle((IntValue)lhs);
+                        recycle((IntValue)rhs);
                         double doubleValue = Math.pow(base, exponent);
-                        return new FloatValue(doubleValue);
+                        return createFloatValue(doubleValue);
                     }
                 }
                 default:
                     throw new RuntimeException("Unknown operator: " + binOpExpr.getOp());
             }
-            return new IntValue(value);
+            recycle((IntValue)lhs);
+            recycle((IntValue)rhs);
+            return createIntValue(value);
         } else if (lhs instanceof IntValue && rhs instanceof FloatValue) {
             double value;
             switch (binOpExpr.getOp()) {
@@ -121,7 +188,9 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                 default:
                     throw new RuntimeException("Unknown operator: " + binOpExpr.getOp());
             }
-            return new FloatValue(value);
+            recycle((IntValue)lhs);
+            recycle((FloatValue)rhs);
+            return createFloatValue(value);
         } else if (lhs instanceof FloatValue && rhs instanceof IntValue) {
             double value;
             switch (binOpExpr.getOp()) {
@@ -143,7 +212,9 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                 default:
                     throw new RuntimeException("Unknown operator: " + binOpExpr.getOp());
             }
-            return new FloatValue(value);
+            recycle((FloatValue)lhs);
+            recycle((IntValue)rhs);
+            return createFloatValue(value);
         } else if (lhs instanceof FloatValue && rhs instanceof FloatValue) {
             double value;
             switch (binOpExpr.getOp()) {
@@ -165,7 +236,9 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                 default:
                     throw new RuntimeException("Unknown operator: " + binOpExpr.getOp());
             }
-            return new FloatValue(value);
+            recycle((FloatValue)lhs);
+            recycle((FloatValue)rhs);
+            return createFloatValue(value);
         } else {
             throw new RuntimeException("Unknown arguments for binary operator: " + lhs + ", " + rhs);
         }
@@ -173,7 +246,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
     @Override
     public Value visitFloatLiteralExpr(FloatLiteralExpr floatLiteralExpr) {
-        return new FloatValue(floatLiteralExpr.getValue());
+        return createFloatValue(floatLiteralExpr.getValue());
     }
 
     @Override
@@ -189,12 +262,11 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
     @Override
     public Value visitIntLiteralExpr(IntLiteralExpr intLiteralExpr) {
-        return new IntValue(intLiteralExpr.getValue());
+        return createIntValue(intLiteralExpr.getValue());
     }
 
     @Override
     public Value visitMapExpr(MapExpr mapExpr) {
-        // TODO: Implement this with multiple threads
         Value argument = evaluateExpr(mapExpr.getArgument());
         if (argument instanceof ErrorValue) {
             return ErrorValue.get();
@@ -204,17 +276,60 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
         // Accumulate the transformed values in this list
         Value[] transformedValues = new Value[toTransform.getValues().length];
+        boolean[] errorOccurred = new boolean[] {false};
 
-        int i = 0;
-        for (Value value : toTransform.getValues()) {
-            // Set the variable's value and evaluate the expression with this value
-            variableValues.put(mapExpr.getLambdaParam(), value);
-            Value transformedValue = evaluateExpr(mapExpr.getLambda());
-            if (transformedValue instanceof ErrorValue) {
-                return ErrorValue.get();
+        boolean valuesRecyclable = argument.isRecyclable();
+
+        final int numberOfThreads = Runtime.getRuntime().availableProcessors();
+
+        Thread[] threads = new Thread[numberOfThreads];
+        for (int j = 0; j < numberOfThreads; j++) {
+            final int finalJ = j;
+            threads[j] = new Thread(() -> {
+                Interpreter subInterpreter = new Interpreter(diagnostics);
+                Value[] values = toTransform.getValues();
+                int size = values.length;
+                for (int i = 0; i < size; i++) {
+                    Value value = values[i];
+                    if (i % numberOfThreads == finalJ) {
+                        // The value is used as a variable in the lambda and can thus not be
+                        // recycled while evaluating the lambda
+                        value.setRecyclable(false);
+                        subInterpreter.variableValues.put(mapExpr.getLambdaParam(), value);
+                        // Set the variable's value and evaluate the expression with this value
+                        Value transformedValue = subInterpreter.evaluateExpr(mapExpr.getLambda());
+                        if (transformedValue instanceof ErrorValue) {
+                            errorOccurred[0] = true;
+                            break;
+                        }
+                        transformedValues[i] = transformedValue;
+
+                        // Recycle the value in the subInterpreter since it tends to need the value
+                        // for the next lambda execution
+                        if (valuesRecyclable) {
+                            value.setRecyclable(true);
+                            if (value instanceof IntValue) {
+                                subInterpreter.recycle((IntValue)value);
+                            } else if (value instanceof FloatValue) {
+                                subInterpreter.recycle((FloatValue)value);
+                            }
+                        }
+                    }
+                }
+            });
+            threads[j].start();
+        }
+
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
             }
-            transformedValues[i] = transformedValue;
-            i++;
+        }
+
+        if (errorOccurred[0]) {
+            return ErrorValue.get();
         }
 
         // The lambda param is no longer valid after the lambda's scope -> remove it
@@ -266,7 +381,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         Value[] values = new Value[upperBound - lowerBound + 1];
         int arrayIndex = 0;
         for (int i = lowerBound; i <= upperBound; i++) {
-            values[arrayIndex] = new IntValue(i);
+            IntValue v = createIntValue(i);
+            values[arrayIndex] = v;
             arrayIndex++;
         }
         return new SequenceValue(values);

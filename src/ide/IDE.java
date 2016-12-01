@@ -42,7 +42,6 @@ public class IDE extends Application {
     @Override
     public void start(Stage primaryStage) {
         executor = Executors.newCachedThreadPool();
-        System.out.println(Thread.currentThread());
 
         codeArea = new CodeArea();
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));

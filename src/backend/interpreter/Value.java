@@ -5,4 +5,18 @@ package backend.interpreter;
  * variables
  */
 public abstract class Value {
+
+    private boolean recyclable = true;
+
+    /**
+     * @return <code>true</code> if this value is not stored anywhere for future retrieval
+     *         (e.g. a variable)
+     */
+    boolean isRecyclable() {
+        return recyclable;
+    }
+
+    void setRecyclable(boolean recyclable) {
+        this.recyclable = recyclable;
+    }
 }

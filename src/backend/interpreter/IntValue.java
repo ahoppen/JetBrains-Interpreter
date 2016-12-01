@@ -5,7 +5,7 @@ package backend.interpreter;
  */
 public class IntValue extends Value {
 
-    private final int value;
+    private int value;
 
     IntValue(int value) {
         this.value = value;
@@ -13,6 +13,10 @@ public class IntValue extends Value {
 
     public int getValue() {
         return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
     }
 
     @Override
