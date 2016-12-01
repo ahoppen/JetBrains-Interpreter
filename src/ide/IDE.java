@@ -50,6 +50,8 @@ public class IDE extends Application {
     private Popup errorPopup;
     private Label errorMessageLabel;
     private CodeArea resultsArea;
+    private VirtualizedScrollPane<CodeArea> resultsScrollPane;
+    private VirtualizedScrollPane<CodeArea> codeScrollPane;
     private ExecutorService executor;
     private List<Diagnostics.Error> errorMessages = new ArrayList<>(0);
 
@@ -62,15 +64,14 @@ public class IDE extends Application {
         codeArea = new CodeArea();
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
 
-        VirtualizedScrollPane<CodeArea> codeScrollPane = new VirtualizedScrollPane<>(codeArea);
+        codeScrollPane = new VirtualizedScrollPane<>(codeArea);
 
         resultsArea = new CodeArea();
         resultsArea.setEditable(false);
         resultsArea.setPrefWidth(200);
         resultsArea.setStyle("-fx-background-color: #eee");
-        VirtualizedScrollPane<CodeArea> resultsScrollPane = new VirtualizedScrollPane<>(resultsArea);
-        codeScrollPane.estimatedScrollYProperty().bindBidirectional(
-                resultsScrollPane.estimatedScrollYProperty());
+        resultsScrollPane = new VirtualizedScrollPane<>(resultsArea);
+        resultsScrollPane.estimatedScrollYProperty().bindBidirectional(codeScrollPane.estimatedScrollYProperty());
 
         BorderPane mainPane = new BorderPane(codeScrollPane);
         mainPane.setRight(resultsArea);
@@ -197,8 +198,8 @@ public class IDE extends Application {
                 .subscribe(value -> errorsStream.push(new ArrayList<>(0)));
 
         resultsStream.subscribe(results -> {
-            resultsArea.clear();
-            resultsArea.appendText(results);
+            Double value = resultsScrollPane.estimatedScrollYProperty().getValue();
+            resultsArea.replaceTextWithoutScrolling(0, resultsArea.getText().length(), results);
         });
 
 
