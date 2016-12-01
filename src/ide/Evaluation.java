@@ -4,7 +4,6 @@ import backend.errorHandling.Diagnostics;
 import backend.interpreter.Value;
 import backend.parser.Token;
 import backend.utils.SourceLoc;
-import backend.utils.SourceManager;
 import frontend.JavaDriver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -57,40 +56,31 @@ class Evaluation {
     }
 
     static List<Highlighting> computeSyntaxHighlighting(String text) {
-        SourceManager sourceManager = new SourceManager(text);
-
         List<Highlighting> syntaxHighlighting = new LinkedList<>();
 
         for (Token token : JavaDriver.lex(text)) {
-            int startOffset = sourceManager.getGlobalOffset(token.getStartLocation());
-            int endOffset = sourceManager.getGlobalOffset(token.getEndLocation());
             String styleName = getStyleNameForToken(token);
             if (styleName != null) {
-                syntaxHighlighting.add(new Highlighting(startOffset, endOffset, styleName));
+                syntaxHighlighting.add(new Highlighting(token.getStartLocation(),
+                        token.getEndLocation(), styleName));
             }
         }
         return syntaxHighlighting;
     }
 
-    static List<Highlighting> getErrorHighlighting(@NotNull List<Diagnostics.Error> errors,
-                                                   @NotNull String sourceCode) {
-        SourceManager sourceManager = new SourceManager(sourceCode);
-
+    static List<Highlighting> getErrorHighlighting(@NotNull List<Diagnostics.Error> errors) {
         List<Highlighting> errorHighlighting = new LinkedList<>();
 
         for (Diagnostics.Error error : errors) {
-            int startOffset = sourceManager.getGlobalOffset(error.getStartLocation());
-            int endOffset = sourceManager.getGlobalOffset(error.getEndLocation());
-            errorHighlighting.add(new Highlighting(startOffset, endOffset, "error"));
+            errorHighlighting.add(new Highlighting(error.getStartLocation(), error.getEndLocation(),
+                    "error"));
         }
 
         return errorHighlighting;
     }
 
     static String getResultsAreaText(@NotNull Map<SourceLoc, Value> evaluationResult,
-                                     @NotNull String sourceCode) {
-        SourceManager sourceManager = new SourceManager(sourceCode);
-
+                                     int numberOfLines) {
         StringBuilder resultsText = new StringBuilder();
         int currentLine = 1;
 
@@ -107,7 +97,7 @@ class Evaluation {
             outputString = outputString.replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r");
             resultsText.append(outputString);
         }
-        while (currentLine <= sourceManager.getNumberOfLines()) {
+        while (currentLine <= numberOfLines) {
             resultsText.append("\n");
             currentLine++;
         }

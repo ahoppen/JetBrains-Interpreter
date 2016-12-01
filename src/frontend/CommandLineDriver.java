@@ -1,6 +1,5 @@
 package frontend;
 
-import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
 import backend.errorHandling.ErrorsVerifier;
 import backend.interpreter.Interpreter;

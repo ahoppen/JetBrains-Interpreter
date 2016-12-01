@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
 import backend.utils.*;
 
 import java.io.Reader;
-import java.rmi.registry.LocateRegistry;
 
 public class Parser {
 

@@ -1,7 +1,6 @@
 package frontend;
 
 import backend.AST.Stmt;
-import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
 import backend.interpreter.Interpreter;
 import backend.interpreter.Value;

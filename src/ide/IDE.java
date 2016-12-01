@@ -1,7 +1,7 @@
 package ide;
 
 import backend.errorHandling.Diagnostics;
-import backend.utils.SourceManager;
+import backend.utils.SourceLoc;
 import frontend.JavaDriver;
 import javafx.application.Application;
 import javafx.concurrent.Task;
@@ -16,7 +16,7 @@ import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.MouseOverTextEvent;
 import org.fxmisc.richtext.PopupAlignment;
-import org.fxmisc.richtext.model.StyleSpans;
+import org.fxmisc.richtext.model.TwoDimensional;
 import org.jetbrains.annotations.NotNull;
 import org.reactfx.EventSource;
 import org.reactfx.EventStream;
@@ -25,7 +25,6 @@ import org.reactfx.util.Tuple2;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -94,9 +93,7 @@ public class IDE extends Application {
             int hoveredOffset = event.getCharacterIndex();
             Point2D pos = event.getScreenPosition();
 
-            SourceManager sourceManager = new SourceManager(codeArea.getText());
-
-            String errorMessage = getErrorMessage(sourceManager, hoveredOffset);
+            String errorMessage = getErrorMessage(getSourceLoc(hoveredOffset));
 
             if (errorMessage != null) {
                 errorMessageLabel.setText(errorMessage);
@@ -107,18 +104,16 @@ public class IDE extends Application {
         });
         codeArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> errorPopup.hide());
 
-        codeArea.caretPositionProperty().addListener((observable, oldValue, newValue) -> {
-            showOrHidePopup(newValue);
-        });
+        codeArea.caretPositionProperty()
+                .addListener((__, ___, newValue) -> showOrHidePopup(getSourceLoc(newValue)));
 
         setUpEventStreams();
 
         codeArea.replaceText(0, 0, sampleCode);
     }
 
-    private void showOrHidePopup(int caretPosition) {
-        SourceManager sourceManager = new SourceManager(codeArea.getText());
-        String errorMessage = getErrorMessage(sourceManager, caretPosition);
+    private void showOrHidePopup(@NotNull SourceLoc caretPosition) {
+        String errorMessage = getErrorMessage(caretPosition);
 
         if (errorMessage != null) {
             errorMessageLabel.setText(errorMessage);
@@ -128,15 +123,27 @@ public class IDE extends Application {
         }
     }
 
-    private String getErrorMessage(@NotNull SourceManager sourceManager, int atOffset) {
+    private String getErrorMessage(@NotNull SourceLoc sourceLoc) {
         String errorMessage = null;
         for (Diagnostics.Error error : errorMessages) {
-            if (sourceManager.getGlobalOffset(error.getStartLocation()) <= atOffset &&
-                    atOffset <= sourceManager.getGlobalOffset(error.getEndLocation())) {
+            if (error.getStartLocation().compareTo(sourceLoc) <= 0 &&
+                    error.getEndLocation().compareTo(sourceLoc) >= 0) {
                 errorMessage = error.getMessage();
             }
         }
         return errorMessage;
+    }
+
+    @NotNull
+    private SourceLoc getCurrentSourceLoc() {
+        return getSourceLoc(codeArea.getCaretPosition());
+    }
+
+    @NotNull
+    private SourceLoc getSourceLoc(int offset) {
+        TwoDimensional.Position pos = codeArea.offsetToPosition(offset,
+                TwoDimensional.Bias.Forward);
+        return new SourceLoc(pos.getMajor() + 1, pos.getMinor() + 1);
     }
 
     private void setUpEventStreams() {
@@ -170,19 +177,19 @@ public class IDE extends Application {
 
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getErrors)
-                .map(errors -> Evaluation.getErrorHighlighting(errors, codeArea.getText()))
+                .map(Evaluation::getErrorHighlighting)
                 .subscribe(errorsStream::push);
 
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getOutput)
-                .map(output -> Evaluation.getResultsAreaText(output, codeArea.getText()))
+                .map(output -> Evaluation.getResultsAreaText(output, codeArea.getParagraphs().size()))
                 .subscribe(resultsStream::push);
 
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getErrors)
                 .subscribe(errors -> {
                     this.errorMessages = errors;
-                    showOrHidePopup(codeArea.getCaretPosition());
+                    showOrHidePopup(getCurrentSourceLoc());
                 });
 
         codeArea.plainTextChanges()
@@ -196,7 +203,7 @@ public class IDE extends Application {
 
 
         EventStreams.combine(syntaxHighlighting, errorsStream)
-                .mapToTask(this::computeStyleSpans)
+                .mapToTask(this::mergeHighlights)
                 .awaitLatest(codeArea.plainTextChanges())
                 .filterMap(task -> {
                     if (task.isSuccess()) {
@@ -205,7 +212,15 @@ public class IDE extends Application {
                         return Optional.empty();
                     }
                 })
-                .subscribe(spans -> codeArea.setStyleSpans(0, spans));
+                .subscribe(highlightings -> {
+                    for (Highlighting h : highlightings) {
+                        assert h.getStart().getLine() == h.getEnd().getLine();
+                        int line = h.getStart().getLine() - 1;
+                        int from = h.getStart().getColumn() - 1;
+                        int to = h.getEnd().getColumn() - 1;
+                        codeArea.setStyle(line, from, to, h.getStyles());
+                    }
+                });
     }
 
     private Task<JavaDriver.EvaluationResult> evaluateCodeAsync() {
@@ -228,12 +243,12 @@ public class IDE extends Application {
         return task;
     }
 
-    private Task<StyleSpans<Collection<String>>> computeStyleSpans(Tuple2<List<Highlighting>,
+    private Task<List<Highlighting>> mergeHighlights(Tuple2<List<Highlighting>,
             List<Highlighting>> h) {
-        Task<StyleSpans<Collection<String>>> task = new Task<StyleSpans<Collection<String>>>() {
+        Task<List<Highlighting>> task = new Task<List<Highlighting>>() {
             @Override
-            protected StyleSpans<Collection<String>> call() throws Exception {
-                return Highlighting.computeStylesSpans(Highlighting.merge(h.get1(), h.get2()));
+            protected List<Highlighting> call() throws Exception {
+                return Highlighting.merge(h.get1(), h.get2());
             }
         };
         executor.execute(task);

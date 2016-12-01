@@ -8,8 +8,6 @@ import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.IntStream;
 
 /**
  * Interprets the statements it consumes, saving the output of each statement in a map that can be
@@ -19,7 +17,7 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
     @FunctionalInterface
     interface Function3<A, B, C, R> {
-        public R apply (A a, B b, C c);
+        R apply(A a, B b, C c);
     }
 
     @NotNull private final Diagnostics diagnostics;
@@ -34,8 +32,8 @@ public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
      * collector. Thus add values that are no longer used to these Stacks from which they can be
      * recycled
      */
-    private Stack<IntValue> recycledIntValues = new Stack<>();
-    private Stack<FloatValue> recycledFloatValues = new Stack<>();
+    private final Stack<IntValue> recycledIntValues = new Stack<>();
+    private final Stack<FloatValue> recycledFloatValues = new Stack<>();
 
     public Interpreter(@NotNull Diagnostics diagnostics) {
         this.diagnostics = diagnostics;

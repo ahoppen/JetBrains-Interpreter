@@ -1,31 +1,45 @@
 package ide;
 
-import org.fxmisc.richtext.model.StyleSpans;
-import org.fxmisc.richtext.model.StyleSpansBuilder;
+import backend.utils.SourceLoc;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
 class Highlighting {
 
-    private final int startOffset;
-    private final int endOffset;
+    @NotNull private final SourceLoc start;
+    @NotNull private final SourceLoc end;
     @NotNull private final Set<String> styles;
 
-    Highlighting(int startOffset, int endOffset, @NotNull Set<String> styles) {
-        assert startOffset <= endOffset;
-        this.startOffset = startOffset;
-        this.endOffset = endOffset;
+    Highlighting(@NotNull SourceLoc start, @NotNull SourceLoc end, @NotNull Set<String> styles) {
+        assert start.compareTo(end) <= 0;
+        this.start = start;
+        this.end = end;
         this.styles = styles;
     }
 
-    Highlighting(int startOffset, int endOffset, String style) {
-        this(startOffset, endOffset, Collections.singleton(style));
+    Highlighting(@NotNull SourceLoc start, @NotNull SourceLoc end, @NotNull String style) {
+        this(start, end, Collections.singleton(style));
+    }
+
+    @NotNull
+    public SourceLoc getStart() {
+        return start;
+    }
+
+    @NotNull
+    public SourceLoc getEnd() {
+        return end;
+    }
+
+    @NotNull
+    public Set<String> getStyles() {
+        return styles;
     }
 
     @Override
     public String toString() {
-        return startOffset + " - " + endOffset + ": " + styles;
+        return start + " - " + end + ": " + styles;
     }
 
     @SuppressWarnings("Duplicates")
@@ -44,43 +58,43 @@ class Highlighting {
             } else if (c2 == null) {
                 merged.add(c1);
                 c1 = i1.hasNext() ? i1.next() : null;
-            } else if (c1.startOffset <= c2.startOffset && c1.endOffset <= c2.startOffset) {
+            } else if (c1.start.compareTo(c2.start) <= 0 && c1.end.compareTo(c2.start) <= 0) {
                 merged.add(c1);
                 c1 = i1.hasNext() ? i1.next() : null;
-            } else if (c1.startOffset <= c2.startOffset && c2.startOffset < c1.endOffset) {
+            } else if (c1.start.compareTo(c2.start) <= 0 && c2.start.compareTo(c1.end) < 0) {
                 Set<String> mergedStyles = new HashSet<>(c1.styles.size() + c2.styles.size());
                 mergedStyles.addAll(c1.styles);
                 mergedStyles.addAll(c2.styles);
-                merged.add(new Highlighting(c1.startOffset, c2.startOffset, c1.styles));
-                int overlappingEnd = Math.min(c1.endOffset, c2.endOffset);
-                merged.add(new Highlighting(c2.startOffset, overlappingEnd, mergedStyles));
-                if (c1.endOffset > overlappingEnd) {
-                    c1 = new Highlighting(overlappingEnd, c1.endOffset, c1.styles);
+                merged.add(new Highlighting(c1.start, c2.start, c1.styles));
+                SourceLoc overlappingEnd = SourceLoc.min(c1.end, c2.end);
+                merged.add(new Highlighting(c2.start, overlappingEnd, mergedStyles));
+                if (c1.end.compareTo(overlappingEnd) > 0) {
+                    c1 = new Highlighting(overlappingEnd, c1.end, c1.styles);
                 } else {
                     c1 = i1.hasNext() ? i1.next() : null;
                 }
-                if (c2.endOffset > overlappingEnd) {
-                    c2 = new Highlighting(overlappingEnd, c2.endOffset, c2.styles);
+                if (c2.end.compareTo(overlappingEnd) > 0) {
+                    c2 = new Highlighting(overlappingEnd, c2.end, c2.styles);
                 } else {
                     c2 = i2.hasNext() ? i2.next() : null;
                 }
-            } else if (c2.startOffset < c1.startOffset && c2.endOffset <= c1.startOffset) {
+            } else if (c2.start.compareTo(c1.start) < 0 && c2.end.compareTo(c1.start) <= 0) {
                 merged.add(c2);
                 c2 = i2.hasNext() ? i2.next() : null;
-            } else if (c2.startOffset < c1.startOffset && c1.startOffset < c2.endOffset) {
+            } else if (c2.start.compareTo(c1.start) < 0 && c1.start.compareTo(c2.end) < 0) {
                 Set<String> mergedStyles = new HashSet<>(c1.styles.size() + c2.styles.size());
                 mergedStyles.addAll(c1.styles);
                 mergedStyles.addAll(c2.styles);
-                int overlappingEnd = Math.min(c1.endOffset, c2.endOffset);
-                merged.add(new Highlighting(c2.startOffset, c1.startOffset, c2.styles));
-                merged.add(new Highlighting(c1.startOffset, overlappingEnd, mergedStyles));
-                if (c1.endOffset > overlappingEnd) {
-                    c1 = new Highlighting(overlappingEnd, c1.endOffset, c1.styles);
+                SourceLoc overlappingEnd = SourceLoc.min(c1.end, c2.end);
+                merged.add(new Highlighting(c2.start, c1.start, c2.styles));
+                merged.add(new Highlighting(c1.start, overlappingEnd, mergedStyles));
+                if (c1.end.compareTo(overlappingEnd) > 0) {
+                    c1 = new Highlighting(overlappingEnd, c1.end, c1.styles);
                 } else {
                     c1 = i1.hasNext() ? i1.next() : null;
                 }
-                if (c2.endOffset > overlappingEnd) {
-                    c2 = new Highlighting(overlappingEnd, c2.endOffset, c2.styles);
+                if (c2.end.compareTo(overlappingEnd) > 0) {
+                    c2 = new Highlighting(overlappingEnd, c2.end, c2.styles);
                 } else {
                     c2 = i2.hasNext() ? i2.next() : null;
                 }
@@ -90,25 +104,5 @@ class Highlighting {
         }
 
         return merged;
-    }
-
-    static StyleSpans<Collection<String>> computeStylesSpans(List<Highlighting> highlightings) {
-        int lastOffset = 0;
-
-        StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
-
-        for (Highlighting h : highlightings) {
-            if (h.startOffset > lastOffset) {
-                spansBuilder.add(Collections.emptySet(), h.startOffset - lastOffset);
-                lastOffset = h.startOffset;
-            }
-            if (h.startOffset != lastOffset) {
-                throw new RuntimeException("Overlapping highlights");
-            }
-            spansBuilder.add(h.styles, h.endOffset - h.startOffset);
-            lastOffset = h.endOffset;
-        }
-
-        return spansBuilder.create();
     }
 }

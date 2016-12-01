@@ -2,8 +2,6 @@ package backend.interpreter;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 /**
  * A sequence consisting of multiple values, returned by an expression.
  */

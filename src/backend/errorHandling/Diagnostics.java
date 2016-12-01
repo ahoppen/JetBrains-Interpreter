@@ -22,10 +22,12 @@ public class Diagnostics {
             this.message = message;
         }
 
+        @NotNull
         public SourceLoc getStartLocation() {
             return startLocation;
         }
 
+        @NotNull
         public SourceLoc getEndLocation() {
             return endLocation;
         }

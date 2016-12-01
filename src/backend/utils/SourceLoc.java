@@ -1,5 +1,7 @@
 package backend.utils;
 
+import org.jetbrains.annotations.NotNull;
+
 public class SourceLoc implements Comparable<SourceLoc> {
 
     private final int line;
@@ -42,10 +44,18 @@ public class SourceLoc implements Comparable<SourceLoc> {
 
 
     @Override
-    public int compareTo(SourceLoc o) {
+    public int compareTo(@NotNull SourceLoc o) {
         if (line != o.line) {
             return line - o.line;
         }
         return column - o.column;
+    }
+
+    public static SourceLoc min(@NotNull SourceLoc x, @NotNull SourceLoc y) {
+        if (x.compareTo(y) <= 0) {
+            return x;
+        } else {
+            return y;
+        }
     }
 }
