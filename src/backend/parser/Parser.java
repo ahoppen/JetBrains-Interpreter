@@ -224,9 +224,8 @@ public class Parser {
                 if (subExpr == null) {
                     return null;
                 }
-                Token rParen = consumeToken();
-                if (rParen.getKind() != Token.Kind.R_PAREN) {
-                    diagnostics.error(rParen, Diag.r_paren_expected, rParen);
+                Token rParen = peekToken();
+                if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
                     return null;
                 }
                 return new ParenExpr(nextToken.getStartLocation(), rParen.getEndLocation(),
@@ -238,9 +237,7 @@ public class Parser {
                 if (lowerBound == null) {
                     return null;
                 }
-                if (!consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_range)) {
-                    return null;
-                }
+                consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_range);
                 Expr upperBound = parseExpr();
                 if (upperBound == null) {
                     return null;
@@ -284,18 +281,14 @@ public class Parser {
      */
     private MapExpr parseMapExpr(@NotNull SourceLoc location) {
         // '('
-        if (!consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected)) {
-            return null;
-        }
+        consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected);
         // expr
         Expr argument = parseExpr();
         if (argument == null) {
             return null;
         }
         // ','
-        if (!consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_map)) {
-            return null;
-        }
+        consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_map);
         // var
         Variable param = parseVariable(Diag.expected_lambda_parameter);
         if (param == null) {
@@ -311,11 +304,8 @@ public class Parser {
             return null;
         }
         // ')'
-        Token rParen = consumeToken();
-        if (rParen.getKind() != Token.Kind.R_PAREN) {
-            diagnostics.error(rParen, Diag.r_paren_expected, rParen);
-            return null;
-        }
+        Token rParen = peekToken();
+        consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected);
         return new MapExpr(location, rParen.getEndLocation(), argument, param, lambda);
     }
 
@@ -327,27 +317,21 @@ public class Parser {
      */
     private ReduceExpr parseReduceExpr(@NotNull SourceLoc location) {
         // '('
-        if (!consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected)) {
-            return null;
-        }
+        consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected);
         // expr
         Expr sequence = parseExpr();
         if (sequence == null) {
             return null;
         }
         // ','
-        if (!consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_reduce)) {
-            return null;
-        }
+        consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_reduce);
         // expr
         Expr base = parseExpr();
         if (base == null) {
             return null;
         }
         // ','
-        if (!consumeToken(Token.Kind.COMMA, Diag.expected_comma_between_params_in_reduce)) {
-            return null;
-        }
+        consumeToken(Token.Kind.COMMA, Diag.expected_comma_between_params_in_reduce);
         // var
         Variable lambdaParam1 = parseVariable(Diag.expected_lambda_parameter);
         if (lambdaParam1 == null) {
@@ -368,18 +352,15 @@ public class Parser {
             return null;
         }
         // ')'
-        Token rParen = consumeToken();
-        if (rParen.getKind() != Token.Kind.R_PAREN) {
-            diagnostics.error(rParen, Diag.r_paren_expected, rParen);
-            return null;
-        }
+        Token rParen = peekToken();
+        consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected);
         return new ReduceExpr(location, rParen.getEndLocation(), base, sequence, lambdaParam1,
                 lambdaParam2, lambda);
     }
 
     /**
-     * Consume the next token, check if it matches the specified kind. If yes, return
-     * <code>true</code> otherwise, issue the specified diagnostic and return <code>false</code>
+     * Check if the next token matches the specified kind. If yes, return <code>true</code> and
+     * consume it, otherwise, issue the specified diagnostic and return <code>false</code>
      *
      * The diagnostics is expected to have one placeholder that will carry the token that was
      * actually seen
@@ -388,11 +369,11 @@ public class Parser {
      * @return <code>true</code> if the specified token was seen, <code>false</code> otherwise
      */
     private boolean consumeToken(Token.Kind kind, String diag) {
-        Token nextToken = consumeToken();
-        if (nextToken.getKind() != kind) {
-            diagnostics.error(nextToken, diag, nextToken.toSourceString());
+        if (peekToken().getKind() != kind) {
+            diagnostics.error(peekToken(), diag, peekToken().toSourceString());
             return false;
         } else {
+            consumeToken();
             return true;
         }
     }
