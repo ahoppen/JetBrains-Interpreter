@@ -21,15 +21,13 @@ import org.fxmisc.richtext.PopupAlignment;
 import org.fxmisc.richtext.model.Paragraph;
 import org.fxmisc.richtext.model.TwoDimensional;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.reactfx.EventSource;
 import org.reactfx.EventStream;
 import org.reactfx.EventStreams;
 import org.reactfx.util.Tuple2;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +57,7 @@ public class IDE extends Application {
     private ExecutorService executor;
     private List<Diagnostics.Error> errorMessages = new ArrayList<>(0);
     private ErrorPopupModel errorPopupModel;
+    @Nullable private File currentFile;
 
     @Override
     public void start(Stage stage) {
@@ -86,7 +85,7 @@ public class IDE extends Application {
         Scene scene = new Scene(mainPane, 1024, 800);
         scene.getStylesheets().add(this.getClass().getResource("codeStyle.css").toExternalForm());
         stage.setScene(scene);
-        stage.setTitle("My Language Editor");
+        stage.setTitle("Untitled");
         stage.show();
 
         errorPopupModel = new ErrorPopupModel((line, column, toInsert) -> {
@@ -121,25 +120,49 @@ public class IDE extends Application {
 
         Menu menuFile = new Menu("File");
         MenuItem open = new MenuItem("Open");
-        open.setOnAction(t -> {
+        open.setOnAction(__ -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Open File");
-            File file = fileChooser.showOpenDialog(stage);
-            codeArea.clear();
-            try {
-                Reader fileReader = new FileReader(file);
-                int c = fileReader.read();
-                StringBuilder sb = new StringBuilder();
-                while (c != -1) {
-                    sb.append((char)c);
-                    c = fileReader.read();
+            currentFile = fileChooser.showOpenDialog(stage);
+            if (currentFile != null) {
+                stage.setTitle(currentFile.getName());
+                codeArea.clear();
+                try {
+                    Reader fileReader = new FileReader(currentFile);
+                    int c = fileReader.read();
+                    StringBuilder sb = new StringBuilder();
+                    while (c != -1) {
+                        sb.append((char)c);
+                        c = fileReader.read();
+                    }
+                    codeArea.appendText(sb.toString());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-                codeArea.appendText(sb.toString());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
         });
-        menuFile.getItems().addAll(open);
+
+        MenuItem save = new MenuItem("Save");
+        save.setOnAction(__ -> {
+            if (currentFile == null) {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Open File");
+                currentFile = fileChooser.showSaveDialog(stage);
+                if (currentFile != null) {
+                    stage.setTitle(currentFile.getName());
+                }
+            }
+            if (currentFile != null) {
+                try {
+                    FileOutputStream writer = new FileOutputStream(currentFile, false);
+                    writer.write(codeArea.getText().getBytes());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        menuFile.getItems().addAll(open, save);
 
         menuBar.getMenus().addAll(menuFile);
 
