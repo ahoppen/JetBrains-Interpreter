@@ -28,6 +28,7 @@ class ErrorPopupModel {
     @NotNull private final HBox popupContent;
     @Nullable private Diagnostics.Error.FixItInsert currentFixIt = null;
     @NotNull private final Label errorMessageLabel;
+    @Nullable private Timer hideTimer;
     private boolean popupHovered;
     private boolean displayedAsHover;
 
@@ -66,6 +67,9 @@ class ErrorPopupModel {
     void showOrHidePopup(@NotNull Node parent, @NotNull Point2D pos,
                          @Nullable Diagnostics.Error error) {
         if (error != null) {
+            if (hideTimer != null) {
+                hideTimer.cancel();
+            }
             displayedAsHover = true;
             currentFixIt = error.getFixIt();
             applyFixItButton.setVisible(currentFixIt != null);
@@ -81,6 +85,9 @@ class ErrorPopupModel {
     void showOrHidePopup(@NotNull Window window,
                          @Nullable Diagnostics.Error error) {
         if (error != null) {
+            if (hideTimer != null) {
+                hideTimer.cancel();
+            }
             displayedAsHover = false;
             currentFixIt = error.getFixIt();
             applyFixItButton.setVisible(currentFixIt != null);
@@ -95,8 +102,11 @@ class ErrorPopupModel {
 
     private void hidePopup() {
         if (displayedAsHover) {
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
+            if (hideTimer != null) {
+                hideTimer.cancel();
+            }
+            hideTimer = new Timer();
+            hideTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     if (!popupHovered) {
