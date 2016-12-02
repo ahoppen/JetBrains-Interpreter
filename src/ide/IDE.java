@@ -7,15 +7,16 @@ import frontend.JavaDriver;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
@@ -31,6 +32,7 @@ import org.reactfx.EventStream;
 import org.reactfx.EventStreams;
 import org.reactfx.util.Tuple2;
 
+import java.io.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -84,6 +86,7 @@ public class IDE extends Application {
 
         BorderPane mainPane = new BorderPane(codeScrollPane);
         mainPane.setRight(resultsArea);
+        mainPane.setTop(buildMenu());
 
         Scene scene = new Scene(mainPane, 1024, 800);
         scene.getStylesheets().add(this.getClass().getResource("codeStyle.css").toExternalForm());
@@ -150,6 +153,36 @@ public class IDE extends Application {
         setUpEventStreams();
 
         codeArea.replaceText(0, 0, sampleCode);
+    }
+
+    private MenuBar buildMenu() {
+        MenuBar menuBar = new MenuBar();
+
+        Menu menuFile = new Menu("File");
+        MenuItem open = new MenuItem("Open");
+        open.setOnAction(t -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Open File");
+            File file = fileChooser.showOpenDialog(stage);
+            codeArea.clear();
+            try {
+                Reader fileReader = new FileReader(file);
+                int c = fileReader.read();
+                StringBuilder sb = new StringBuilder();
+                while (c != -1) {
+                    sb.append((char)c);
+                    c = fileReader.read();
+                }
+                codeArea.appendText(sb.toString());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        menuFile.getItems().addAll(open);
+
+        menuBar.getMenus().addAll(menuFile);
+
+        return menuBar;
     }
 
     private void showOrHidePopup(@NotNull SourceLoc caretPosition) {
