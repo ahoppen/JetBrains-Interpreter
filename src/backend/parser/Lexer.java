@@ -94,6 +94,7 @@ public class Lexer {
                         // will just be consumed as whitespace in the next iteration
                         while (nextChar != '\n' && nextChar != '\r') {
                             comment.append(nextChar);
+                            lastLocation = scanner.getCurrentSourceLoc();
                             nextChar = scanner.consume();
                         }
                     } catch (EOFException ignored) {}
