@@ -10,6 +10,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -28,6 +31,7 @@ import org.reactfx.EventStreams;
 import org.reactfx.util.Tuple2;
 
 import java.io.*;
+import java.security.cert.Extension;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,9 +124,15 @@ public class IDE extends Application {
 
         Menu menuFile = new Menu("File");
         MenuItem open = new MenuItem("Open");
+        open.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
         open.setOnAction(__ -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Open File");
+            FileChooser.ExtensionFilter mlFilter = new FileChooser.ExtensionFilter(
+                    "MyLanguage files (*.ml)", "*.ml");
+            FileChooser.ExtensionFilter allFilesFilter = new FileChooser.ExtensionFilter(
+                    "All files", "*.*");
+            fileChooser.getExtensionFilters().addAll(mlFilter, allFilesFilter);
             currentFile = fileChooser.showOpenDialog(stage);
             if (currentFile != null) {
                 stage.setTitle(currentFile.getName());
@@ -143,10 +153,11 @@ public class IDE extends Application {
         });
 
         MenuItem save = new MenuItem("Save");
+        save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
         save.setOnAction(__ -> {
             if (currentFile == null) {
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Open File");
+                fileChooser.setTitle("Save File");
                 currentFile = fileChooser.showSaveDialog(stage);
                 if (currentFile != null) {
                     stage.setTitle(currentFile.getName());
@@ -165,6 +176,7 @@ public class IDE extends Application {
         menuFile.getItems().addAll(open, save);
 
         menuBar.getMenus().addAll(menuFile);
+        menuBar.useSystemMenuBarProperty().setValue(true);
 
         return menuBar;
     }
