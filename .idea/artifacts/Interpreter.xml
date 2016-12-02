@@ -14,10 +14,6 @@
     <root id="root">
       <element id="archive" name="Interpreter.jar">
         <element id="module-output" name="Interpreter" />
-        <element id="library" level="project" name="org.fxmisc.flowless:flowless:Latest" />
-        <element id="library" level="project" name="org.fxmisc.undo:undofx:Latest" />
-        <element id="library" level="project" name="org.fxmisc.wellbehaved:wellbehavedfx:Latest" />
-        <element id="library" level="project" name="org.reactfx:reactfx:Latest" />
         <element id="library" level="project" name="annotations-java8" />
       </element>
     </root>

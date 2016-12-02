@@ -135,7 +135,8 @@ public class CommandLineDriver {
 
     private static void printErrors(@NotNull Diagnostics diagnostics) {
         for (Diagnostics.Error error : diagnostics.getErrors()) {
-            System.out.println(error.getStartLocation() + ": " + error.getMessage());
+            System.out.println(error.getStartLocation() + " - " + error.getEndLocation() + ": " +
+                    error.getMessage());
         }
     }
 

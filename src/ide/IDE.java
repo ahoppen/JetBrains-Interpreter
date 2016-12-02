@@ -1,6 +1,7 @@
 package ide;
 
 import backend.errorHandling.Diagnostics;
+import backend.interpreter.Value;
 import backend.utils.SourceLoc;
 import frontend.JavaDriver;
 import javafx.application.Application;
@@ -16,6 +17,7 @@ import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.MouseOverTextEvent;
 import org.fxmisc.richtext.PopupAlignment;
+import org.fxmisc.richtext.model.Paragraph;
 import org.fxmisc.richtext.model.TwoDimensional;
 import org.jetbrains.annotations.NotNull;
 import org.reactfx.EventSource;
@@ -26,6 +28,7 @@ import org.reactfx.util.Tuple2;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +40,7 @@ public class IDE extends Application {
         launch(args);
     }
 
-    private static final String sampleCode = String.join("\n", new String[] {
+    private static final String sampleCode = String.join("\r\n", new String[] {
             "var n = 1000",
             "var sequence = map({0, n}, i -> (-1)^i / (2 * i + 1))",
             "var pi = 4 * reduce(sequence, 0, x y -> x + y)",
@@ -50,8 +53,6 @@ public class IDE extends Application {
     private Popup errorPopup;
     private Label errorMessageLabel;
     private CodeArea resultsArea;
-    private VirtualizedScrollPane<CodeArea> resultsScrollPane;
-    private VirtualizedScrollPane<CodeArea> codeScrollPane;
     private ExecutorService executor;
     private List<Diagnostics.Error> errorMessages = new ArrayList<>(0);
 
@@ -64,14 +65,15 @@ public class IDE extends Application {
         codeArea = new CodeArea();
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
 
-        codeScrollPane = new VirtualizedScrollPane<>(codeArea);
+        VirtualizedScrollPane<CodeArea> codeScrollPane = new VirtualizedScrollPane<>(codeArea);
 
         resultsArea = new CodeArea();
         resultsArea.setEditable(false);
         resultsArea.setPrefWidth(200);
         resultsArea.setStyle("-fx-background-color: #eee");
-        resultsScrollPane = new VirtualizedScrollPane<>(resultsArea);
-        resultsScrollPane.estimatedScrollYProperty().bindBidirectional(codeScrollPane.estimatedScrollYProperty());
+        VirtualizedScrollPane<CodeArea> resultsScrollPane = new VirtualizedScrollPane<>(resultsArea);
+        resultsScrollPane.estimatedScrollYProperty().bindBidirectional(
+                codeScrollPane.estimatedScrollYProperty());
 
         BorderPane mainPane = new BorderPane(codeScrollPane);
         mainPane.setRight(resultsArea);
@@ -197,10 +199,36 @@ public class IDE extends Application {
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
                 .subscribe(value -> errorsStream.push(new ArrayList<>(0)));
 
-        resultsStream.subscribe(results -> {
-            Double value = resultsScrollPane.estimatedScrollYProperty().getValue();
-            resultsArea.replaceTextWithoutScrolling(0, resultsArea.getText().length(), results);
-        });
+        evaluationResult
+                .map(JavaDriver.EvaluationResult::getOutput)
+                .subscribe(output -> {
+                    // Clear all existing lines
+                    for (int line = 0; line < resultsArea.getParagraphs().size(); line++) {
+                        Paragraph paragraph = resultsArea.getParagraph(line);
+                        resultsArea.replaceText(line, 0, line, paragraph.length(),
+                                "");
+                    }
+                    // Create enough new lines to match the number of lines in the code
+                    while (resultsArea.getParagraphs().size() <= codeArea.getParagraphs().size()) {
+                        resultsArea.appendText("\n");
+                    }
+                    // Delete any remaining lines in the results area
+                    if (resultsArea.getParagraphs().size() > codeArea.getParagraphs().size()) {
+                        Paragraph lastParagraph = resultsArea.getParagraph(
+                                codeArea.getParagraphs().size() - 1);
+                        resultsArea.replaceText(codeArea.getParagraphs().size() - 1,
+                                lastParagraph.length(),
+                                resultsArea.getParagraphs().size() - 1,
+                                0,
+                                "");
+                    }
+                    // Fill the lines with the results
+                    for (Map.Entry<SourceLoc, Value> entry : output.entrySet()) {
+                        int line = entry.getKey().getLine() - 1;
+                        resultsArea.replaceText(line, 0, line, 0,
+                                entry.getValue().toString());
+                    }
+                });
 
 
         EventStreams.combine(syntaxHighlighting, errorsStream)
