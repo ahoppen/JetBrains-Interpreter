@@ -5,11 +5,17 @@ import backend.interpreter.Value;
 import backend.utils.SourceLoc;
 import frontend.JavaDriver;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
@@ -26,10 +32,7 @@ import org.reactfx.EventStreams;
 import org.reactfx.util.Tuple2;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -51,7 +54,11 @@ public class IDE extends Application {
     private Stage stage;
     private CodeArea codeArea;
     private Popup errorPopup;
+    private Button applyFixItButton;
+    private HBox popupContent;
+    private Diagnostics.Error.FixItInsert currentFixIt;
     private Label errorMessageLabel;
+    private boolean popupHovered;
     private CodeArea resultsArea;
     private ExecutorService executor;
     private List<Diagnostics.Error> errorMessages = new ArrayList<>(0);
@@ -84,10 +91,21 @@ public class IDE extends Application {
         stage.setTitle("My Language Editor");
         stage.show();
 
-        errorPopup = new Popup();
         errorMessageLabel = new Label();
         errorMessageLabel.setId("errorPopup");
-        errorPopup.getContent().add(errorMessageLabel);
+
+        applyFixItButton = new Button("Fix-It");
+        applyFixItButton.setOnAction(e -> {
+            int line = currentFixIt.getLocation().getLine() - 1;
+            int column = currentFixIt.getLocation().getColumn() - 1;
+            String toInsert = currentFixIt.getToInsert();
+            codeArea.replaceText(line, column, line, column, toInsert);
+        });
+
+        popupContent = new HBox(errorMessageLabel, applyFixItButton);
+
+        errorPopup = new Popup();
+        errorPopup.getContent().add(popupContent);
         codeArea.setPopupWindow(errorPopup);
         codeArea.setPopupAlignment(PopupAlignment.SELECTION_BOTTOM_CENTER);
 
@@ -101,14 +119,33 @@ public class IDE extends Application {
             if (errorMessage != null) {
                 errorMessageLabel.setText(errorMessage);
                 errorPopup.show(codeArea, pos.getX(), pos.getY() + 10);
+                popupContent.requestFocus();
             } else {
                 errorPopup.hide();
             }
         });
-        codeArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> errorPopup.hide());
+        codeArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> {
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if (!popupHovered) {
+                        Platform.runLater(() -> errorPopup.hide());
+                    }
+                }
+            }, 500);
+        });
+
 
         codeArea.caretPositionProperty()
                 .addListener((__, ___, newValue) -> showOrHidePopup(getSourceLoc(newValue)));
+
+
+        popupContent.addEventHandler(MouseEvent.MOUSE_ENTERED, __ -> popupHovered = true);
+        popupContent.addEventHandler(MouseEvent.MOUSE_EXITED, __ -> {
+            popupHovered = false;
+            errorPopup.hide();
+        });
 
         setUpEventStreams();
 
@@ -121,6 +158,7 @@ public class IDE extends Application {
         if (errorMessage != null) {
             errorMessageLabel.setText(errorMessage);
             errorPopup.show(stage);
+            popupContent.requestFocus();
         } else {
             errorPopup.hide();
         }
@@ -132,6 +170,12 @@ public class IDE extends Application {
             if (error.getStartLocation().compareTo(sourceLoc) <= 0 &&
                     error.getEndLocation().compareTo(sourceLoc) >= 0) {
                 errorMessage = error.getMessage();
+                if (error.getFixIt() != null) {
+                    currentFixIt = error.getFixIt();
+                    applyFixItButton.setVisible(true);
+                } else {
+                    applyFixItButton.setVisible(false);
+                }
             }
         }
         return errorMessage;

@@ -225,7 +225,7 @@ public class Parser {
                     return null;
                 }
                 Token rParen = peekToken();
-                if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected)) {
+                if (!consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected, ")")) {
                     return null;
                 }
                 return new ParenExpr(nextToken.getStartLocation(), rParen.getEndLocation(),
@@ -237,7 +237,7 @@ public class Parser {
                 if (lowerBound == null) {
                     return null;
                 }
-                consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_range);
+                consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_range, ", ");
                 Expr upperBound = parseExpr();
                 if (upperBound == null) {
                     return null;
@@ -281,21 +281,21 @@ public class Parser {
      */
     private MapExpr parseMapExpr(@NotNull SourceLoc location) {
         // '('
-        consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected);
+        consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected, "(");
         // expr
         Expr argument = parseExpr();
         if (argument == null) {
             return null;
         }
         // ','
-        consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_map);
+        consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_map, ", ");
         // var
         Variable param = parseVariable(Diag.expected_lambda_parameter);
         if (param == null) {
             return null;
         }
         // '->'
-        if (!consumeToken(Token.Kind.ARROW, Diag.expected_arrow_in_lambda)) {
+        if (!consumeToken(Token.Kind.ARROW, Diag.expected_arrow_in_lambda, "->")) {
             return null;
         }
         // expr
@@ -305,7 +305,7 @@ public class Parser {
         }
         // ')'
         Token rParen = peekToken();
-        consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected);
+        consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected, ")");
         return new MapExpr(location, rParen.getEndLocation(), argument, param, lambda);
     }
 
@@ -317,21 +317,21 @@ public class Parser {
      */
     private ReduceExpr parseReduceExpr(@NotNull SourceLoc location) {
         // '('
-        consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected);
+        consumeToken(Token.Kind.L_PAREN, Diag.l_paren_expected, "(");
         // expr
         Expr sequence = parseExpr();
         if (sequence == null) {
             return null;
         }
         // ','
-        consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_reduce);
+        consumeToken(Token.Kind.COMMA, Diag.expected_comma_in_reduce, ", ");
         // expr
         Expr base = parseExpr();
         if (base == null) {
             return null;
         }
         // ','
-        consumeToken(Token.Kind.COMMA, Diag.expected_comma_between_params_in_reduce);
+        consumeToken(Token.Kind.COMMA, Diag.expected_comma_between_params_in_reduce, ", ");
         // var
         Variable lambdaParam1 = parseVariable(Diag.expected_lambda_parameter);
         if (lambdaParam1 == null) {
@@ -343,7 +343,7 @@ public class Parser {
             return null;
         }
         // '->'
-        if (!consumeToken(Token.Kind.ARROW, Diag.expected_arrow_in_lambda)) {
+        if (!consumeToken(Token.Kind.ARROW, Diag.expected_arrow_in_lambda, "->")) {
             return null;
         }
         // expr
@@ -353,7 +353,7 @@ public class Parser {
         }
         // ')'
         Token rParen = peekToken();
-        consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected);
+        consumeToken(Token.Kind.R_PAREN, Diag.r_paren_expected, ")");
         return new ReduceExpr(location, rParen.getEndLocation(), base, sequence, lambdaParam1,
                 lambdaParam2, lambda);
     }
@@ -364,13 +364,23 @@ public class Parser {
      *
      * The diagnostics is expected to have one placeholder that will carry the token that was
      * actually seen
+     *
+     * If <code>fixItInsert</code> is not <code>null</code> the diagnostic will offer the user to
+     * insert the specified string right in front of the current token
+     *
      * @param kind The expected kind of the next token
      * @param diag The diagnostic to issue when a different token was seen
+     * @param fixItInsert A string to insert in front of the next token to fix the issue
      * @return <code>true</code> if the specified token was seen, <code>false</code> otherwise
      */
-    private boolean consumeToken(Token.Kind kind, String diag) {
+    private boolean consumeToken(Token.Kind kind, @NotNull String diag,
+                                 @Nullable String fixItInsert) {
         if (peekToken().getKind() != kind) {
-            diagnostics.error(peekToken(), diag, peekToken().toSourceString());
+            Diagnostics.Error error = diagnostics.error(peekToken(), diag,
+                    peekToken().toSourceString());
+            if (fixItInsert != null) {
+                error.fixItInsert(peekToken().getStartLocation(), fixItInsert);
+            }
             return false;
         } else {
             consumeToken();
