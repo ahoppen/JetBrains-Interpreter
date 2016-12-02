@@ -33,10 +33,7 @@ import org.reactfx.util.Tuple2;
 import java.io.*;
 import java.security.cert.Extension;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -297,14 +294,31 @@ public class IDE extends Application {
                     }
                 })
                 .subscribe(highlightings -> {
+                    SourceLoc lastLoc = new SourceLoc(1, 1);
                     for (Highlighting h : highlightings) {
-                        assert h.getStart().getLine() == h.getEnd().getLine();
-                        int line = h.getStart().getLine() - 1;
-                        int from = h.getStart().getColumn() - 1;
-                        int to = h.getEnd().getColumn() - 1;
-                        codeArea.setStyle(line, from, to, h.getStyles());
+                        if (lastLoc.compareTo(h.getStart()) < 0) {
+                            setCodeAreaHighlighting(lastLoc, h.getStart(), Collections.emptySet());
+                        }
+                        setCodeAreaHighlighting(h.getStart(), h.getEnd(), h.getStyles());
+                        lastLoc = h.getEnd();
                     }
                 });
+    }
+
+    private void setCodeAreaHighlighting(@NotNull SourceLoc from, @NotNull SourceLoc to,
+                                         @NotNull Set<String> styles) {
+        int fromLine = from.getLine() - 1;
+        int toLine = to.getLine() - 1;
+        for (int line = fromLine; line <= toLine; line++) {
+            int fromColumn = (line == fromLine) ? from.getColumn() - 1 : 0;
+            int toColumn;
+            if (line == toLine) {
+                toColumn =  to.getColumn() - 1;
+            } else {
+                toColumn = codeArea.getParagraph(line).length();
+            }
+            codeArea.setStyle(line, fromColumn, toColumn, styles);
+        }
     }
 
     private <T> Task<T> performOnSourceCode(Function<String, T> toPerform) {
