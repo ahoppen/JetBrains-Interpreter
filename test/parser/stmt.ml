@@ -16,3 +16,6 @@ out 1
 # CHECK: (outExpr
 # CHECK:   (intLiteralExpr value=1)
 # CHECK: )
+
+# expectedError@+1:7: Unexpected start of statements. Statements must start with 'var', 'out' or 'print' but found '('
+print ( #expectedError@7: Expected a string literal after 'print' but got '('

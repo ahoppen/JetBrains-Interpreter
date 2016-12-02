@@ -76,7 +76,7 @@ public class Parser {
                         Token stringToken = peekToken();
                         if (stringToken.getKind() != Token.Kind.STRING_LITERAL) {
                             diagnostics.error(stringToken, Diag.no_string_literal_after_print,
-                                    stringToken);
+                                    stringToken.toSourceString());
                             break;
                         }
                         // Consume the string token
