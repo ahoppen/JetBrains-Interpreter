@@ -86,7 +86,9 @@ public class Lexer {
                 case '#': {
                     SourceLoc location = scanner.getCurrentSourceLoc();
                     StringBuilder comment = new StringBuilder();
+                    SourceLoc lastLocation = location;
                     try {
+                        lastLocation = scanner.getCurrentSourceLoc();
                         char nextChar = scanner.consume();
                         // It doesn't matter if we don't consume the newline character(s) since they
                         // will just be consumed as whitespace in the next iteration
@@ -96,7 +98,7 @@ public class Lexer {
                         }
                     } catch (EOFException ignored) {}
                     return new Token(Token.Kind.COMMENT, comment.toString(), location,
-                            scanner.getCurrentSourceLoc());
+                            lastLocation);
                 }
                 default:
                     SourceLoc location = scanner.getCurrentSourceLoc();
@@ -254,10 +256,10 @@ public class Lexer {
                         if (c == '\n' || c == '\r') {
                             // Reached end of line, just assume the string is terminated and
                             // return it
-                            diagnostics.error(location, scanner.getCurrentSourceLoc(),
+                            diagnostics.error(location, lastLocation,
                                     Diag.eol_before_string_terminated);
                             return new Token(Token.Kind.STRING_LITERAL, sb.toString(), location,
-                                    scanner.getCurrentSourceLoc());
+                                    lastLocation);
                         }
                         sb.append(c);
                     }
