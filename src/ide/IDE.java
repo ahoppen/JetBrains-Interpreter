@@ -222,7 +222,6 @@ public class IDE extends Application {
                 });
 
         EventSource<List<Highlighting>> errorsStream = new EventSource<>();
-        EventSource<String> resultsStream = new EventSource<>();
         EventStream<JavaDriver.EvaluationResult> evaluationResult = codeArea.plainTextChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
                 .successionEnds(Duration.ofMillis(500))
@@ -240,11 +239,6 @@ public class IDE extends Application {
                 .map(JavaDriver.EvaluationResult::getErrors)
                 .map(Evaluation::getErrorHighlighting)
                 .subscribe(errorsStream::push);
-
-        evaluationResult
-                .map(JavaDriver.EvaluationResult::getOutput)
-                .map(output -> Evaluation.getResultsAreaText(output, codeArea.getParagraphs().size()))
-                .subscribe(resultsStream::push);
 
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getErrors)
@@ -280,10 +274,13 @@ public class IDE extends Application {
                                 0,
                                 "");
                     }
+                    List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(output.entrySet());
+                    outputs.sort(Comparator.comparing(Map.Entry::getKey));
                     // Fill the lines with the results
-                    for (Map.Entry<SourceLoc, Value> entry : output.entrySet()) {
+                    for (Map.Entry<SourceLoc, Value> entry : outputs) {
                         int line = entry.getKey().getLine() - 1;
-                        resultsArea.replaceText(line, 0, line, 0,
+                        int length = resultsArea.getParagraph(line).length();
+                        resultsArea.replaceText(line, length, line, length,
                                 entry.getValue().toString());
                     }
                 });
