@@ -9,11 +9,15 @@ import backend.utils.SourceLoc;
 import java.io.EOFException;
 import java.io.Reader;
 
-public class Lexer {
+public final class Lexer {
 
     @NotNull private final Scanner scanner;
     @NotNull private final Diagnostics diagnostics;
 
+    /**
+     * @param inputReader A reader that allows reading the source code
+     * @param diagnostics The diagnostics engine to use
+     */
     public Lexer(@NotNull Reader inputReader, @NotNull Diagnostics diagnostics) {
         scanner = new Scanner(inputReader);
         this.diagnostics = diagnostics;

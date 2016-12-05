@@ -11,7 +11,7 @@ import backend.utils.SourceLoc;
  * <p>where <code>argument</code> is an expression</p>
  * <p>Prints the evaluated value of <code>argument</code></p>
  */
-public class OutStmt extends Stmt {
+public final class OutStmt extends Stmt {
     @NotNull
     private final Expr argument;
 

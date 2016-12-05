@@ -3,7 +3,7 @@ package backend.AST.Type;
 /**
  * A float or int type
  */
-public class NumberType extends Type {
+public final class NumberType extends Type {
 
     private static final NumberType INSTANCE = new NumberType();
 

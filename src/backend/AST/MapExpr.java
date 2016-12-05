@@ -18,7 +18,7 @@ import backend.utils.SourceLoc;
  * by transforming each value in <code>argument</code> according to <code>lambda</code>
  * </p>
  */
-public class MapExpr extends Expr {
+public final class MapExpr extends Expr {
     /** The sequence to transform */
     @NotNull private final Expr argument;
     /** The variable that contains the value to transform in each lambda iteration */

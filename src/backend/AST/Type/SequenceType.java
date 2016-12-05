@@ -2,7 +2,7 @@ package backend.AST.Type;
 
 import org.jetbrains.annotations.NotNull;
 
-public class SequenceType extends Type {
+public final class SequenceType extends Type {
 
     @NotNull private final Type subType;
 

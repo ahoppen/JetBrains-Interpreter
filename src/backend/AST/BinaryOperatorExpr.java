@@ -12,7 +12,7 @@ import backend.utils.SourceLoc;
  * <p>where <code>lhs</code> and <code>rhs</code> are expressions and <code>op</code> is
  * <code>+ | - | * | / | ^</code></p>
  */
-public class BinaryOperatorExpr extends Expr {
+public final class BinaryOperatorExpr extends Expr {
 
     public enum Operator {
         ADD,

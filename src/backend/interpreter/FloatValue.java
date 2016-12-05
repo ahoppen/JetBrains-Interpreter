@@ -3,7 +3,7 @@ package backend.interpreter;
 /**
  * A floating point value returned by an expression
  */
-public class FloatValue extends Value {
+public final class FloatValue extends Value {
 
     private double value;
 

@@ -3,7 +3,7 @@ package backend.interpreter;
 /**
  * An integer value returned by an expression
  */
-public class IntValue extends Value {
+public final class IntValue extends Value {
 
     private int value;
 

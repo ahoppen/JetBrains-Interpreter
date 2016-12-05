@@ -9,7 +9,7 @@ import backend.utils.SourceLoc;
  * floatLiteral ::= (-)? ( ([0-9]+.[0-9]*) | ([0-9]*.[0-9]+) )
  * </code>
  */
-public class FloatLiteralExpr extends Expr {
+public final class FloatLiteralExpr extends Expr {
     private final double value;
 
     public FloatLiteralExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,

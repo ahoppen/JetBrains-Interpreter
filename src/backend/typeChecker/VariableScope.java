@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-class VariableScope {
+final class VariableScope {
 
     @Nullable private final VariableScope outerScope;
     @NotNull private final Map<String, Variable> identifiers = new HashMap<>();

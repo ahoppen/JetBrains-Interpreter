@@ -16,7 +16,7 @@ import backend.utils.SourceLoc;
  * <code>upperBound < lowerBound</code> this will result in a runtime error
  * </p>
  */
-public class RangeExpr extends Expr {
+public final class RangeExpr extends Expr {
     @NotNull private final Expr lowerBound;
     @NotNull private final Expr upperBound;
 

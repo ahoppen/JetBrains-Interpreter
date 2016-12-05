@@ -11,7 +11,7 @@ import backend.utils.SourceLoc;
  *
  * <p>where <code>lhs</code> is an identifier and <code>rhs</code> is an expression</p>
  */
-public class AssignStmt extends Stmt {
+public final class AssignStmt extends Stmt {
     @NotNull private final Variable lhs;
     @NotNull private final Expr rhs;
 

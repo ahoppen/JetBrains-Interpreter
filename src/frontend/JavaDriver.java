@@ -21,7 +21,7 @@ public class JavaDriver {
         @NotNull private final List<Diagnostics.Error> errors;
         @NotNull private final Map<SourceLoc, Value> output;
 
-        public EvaluationResult(@NotNull List<Diagnostics.Error> errors, @NotNull Map<SourceLoc, Value> output) {
+        private EvaluationResult(@NotNull List<Diagnostics.Error> errors, @NotNull Map<SourceLoc, Value> output) {
             this.errors = errors;
             this.output = output;
         }

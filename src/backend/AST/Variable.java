@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
  * on strings as identifiers for equality, i.e. two different variables with the same name can exist
  * alongside each other. This allows shadowing
  */
-public class Variable {
+public final class Variable {
     @NotNull private final String name;
     @Nullable private Type type = null;
 

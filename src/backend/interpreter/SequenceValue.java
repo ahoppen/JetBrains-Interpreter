@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A sequence consisting of multiple values, returned by an expression.
  */
-public class SequenceValue extends Value {
+public final class SequenceValue extends Value {
 
     @NotNull private final Value[] values;
 

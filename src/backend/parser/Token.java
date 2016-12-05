@@ -7,7 +7,7 @@ import backend.utils.SourceLoc;
 /**
  * Represents a token lexed by {@link Lexer}.
  */
-public class Token {
+public final class Token {
 
     public enum Kind {
         IDENTIFIER,

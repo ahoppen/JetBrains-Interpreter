@@ -31,7 +31,6 @@ import org.reactfx.EventStreams;
 import org.reactfx.util.Tuple2;
 
 import java.io.*;
-import java.security.cert.Extension;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;

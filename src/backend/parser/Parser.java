@@ -10,7 +10,7 @@ import backend.utils.*;
 
 import java.io.Reader;
 
-public class Parser {
+public final class Parser {
 
     @NotNull private final Lexer lexer;
     @NotNull private final ASTConsumer consumer;
@@ -18,6 +18,11 @@ public class Parser {
     @NotNull private final Diagnostics diagnostics;
     @Nullable private Token peekedToken;
 
+    /**
+     * @param inputReader A reader that allows reading the source code
+     * @param consumer The consumer of the statements created by the parser
+     * @param diagnostics The diagnostics engine to use
+     */
     public Parser(@NotNull Reader inputReader, @NotNull ASTConsumer consumer,
                   @NotNull Diagnostics diagnostics) {
         this(inputReader, consumer, diagnostics, null);

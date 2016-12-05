@@ -16,7 +16,7 @@ import backend.utils.SourceLoc;
  * Outputs the string literal upon evaluation
  * </p>
  */
-public class PrintStmt extends Stmt {
+public final class PrintStmt extends Stmt {
     @NotNull
     private final String argument;
 

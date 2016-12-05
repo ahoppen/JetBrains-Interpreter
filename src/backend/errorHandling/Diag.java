@@ -1,6 +1,11 @@
 package backend.errorHandling;
 
-public abstract class Diag {
+/**
+ * Collection of error messages. This enum is meant to be uninhabited but only have static error
+ * messages
+ */
+public enum Diag {
+    ;
 
     // ==========================
     // Lexer

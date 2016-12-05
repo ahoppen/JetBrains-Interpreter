@@ -12,7 +12,7 @@ import java.util.Set;
  * Allows consumption of characters from the source file and keeps track of the position of the
  * characters in the source file as line and column
  */
-class Scanner {
+final class Scanner {
 
     @NotNull private final Reader inputReader;
     @NotNull private final LinkedList<Character> buffer = new LinkedList<>();

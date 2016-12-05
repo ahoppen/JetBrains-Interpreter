@@ -2,7 +2,7 @@ package backend.interpreter;
 
 import org.jetbrains.annotations.NotNull;
 
-public class StringValue extends Value {
+public final class StringValue extends Value {
 
     @NotNull private final String value;
 

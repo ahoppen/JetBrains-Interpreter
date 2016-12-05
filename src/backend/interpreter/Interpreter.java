@@ -13,7 +13,7 @@ import java.util.*;
  * Interprets the statements it consumes, saving the output of each statement in a map that can be
  * retrieved using {@link #getOutput()}
  */
-public class Interpreter implements ASTConsumer, ASTVisitor<Value> {
+public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
     @FunctionalInterface
     interface Function3<A, B, C, R> {

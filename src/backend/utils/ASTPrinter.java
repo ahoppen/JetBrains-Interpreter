@@ -3,7 +3,7 @@ package backend.utils;
 import backend.AST.*;
 import org.jetbrains.annotations.NotNull;
 
-public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
+public final class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     private int indentation = 0;
 
@@ -25,7 +25,7 @@ public class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
         indentation -= 1;
     }
 
-    private void print(String str) {
+    private void print(@NotNull String str) {
         for (int i = 0; i < indentation; i++) {
             System.out.print("  ");
         }

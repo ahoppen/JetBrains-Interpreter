@@ -13,7 +13,7 @@ import backend.errorHandling.Diagnostics;
 /**
  * Does static type checking of the AST and resolves variable references in {@link VariableRefExpr}s
  */
-public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
+public final class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
     @NotNull private final ASTConsumer nextConsumer;
     @NotNull private final Diagnostics diagnostics;
@@ -21,6 +21,7 @@ public class TypeChecker implements ASTConsumer, ASTVisitor<Boolean> {
 
     /**
      * @param nextConsumer The consumer to whom the type checked statements should be passed on to
+     * @param diagnostics The diagnostics engine to use
      */
     public TypeChecker(@NotNull ASTConsumer nextConsumer, @NotNull Diagnostics diagnostics) {
         this.nextConsumer = nextConsumer;

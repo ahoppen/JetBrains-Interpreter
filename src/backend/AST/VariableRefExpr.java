@@ -10,7 +10,7 @@ import backend.utils.SourceLoc;
  * varRefExpr ::= [a-zA-Z_][a-zA-Z0-9_]*
  * </code>
  */
-public class VariableRefExpr extends Expr {
+public final class VariableRefExpr extends Expr {
     @NotNull private final String variableName;
     @Nullable private Variable referencedVariable;
 

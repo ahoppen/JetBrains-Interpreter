@@ -12,11 +12,11 @@ public abstract class Value {
      * @return <code>true</code> if this value is not stored anywhere for future retrieval
      *         (e.g. a variable)
      */
-    boolean isRecyclable() {
+    final boolean isRecyclable() {
         return recyclable;
     }
 
-    void setRecyclable(boolean recyclable) {
+    final void setRecyclable(boolean recyclable) {
         this.recyclable = recyclable;
     }
 }

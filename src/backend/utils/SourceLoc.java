@@ -2,7 +2,7 @@ package backend.utils;
 
 import org.jetbrains.annotations.NotNull;
 
-public class SourceLoc implements Comparable<SourceLoc> {
+public final class SourceLoc implements Comparable<SourceLoc> {
 
     private final int line;
     private final int column;

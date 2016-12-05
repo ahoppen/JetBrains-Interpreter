@@ -10,7 +10,7 @@ import backend.utils.SourceLoc;
  * </code>
  * <p>Represents an expression that was wrapped in parenthesis in the source code</p>
  */
-public class ParenExpr extends Expr {
+public final class ParenExpr extends Expr {
     @NotNull private final Expr subExpr;
 
     public ParenExpr(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation,

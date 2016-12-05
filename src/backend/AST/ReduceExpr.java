@@ -23,7 +23,7 @@ import backend.utils.SourceLoc;
  * For efficiency reasons in evaluation the lambda is assumed to be associative
  * </p>
  */
-public class ReduceExpr extends Expr {
+public final class ReduceExpr extends Expr {
     @NotNull private final Expr base;
     @NotNull private final Expr sequence;
     @NotNull private final Variable lambdaParam1;

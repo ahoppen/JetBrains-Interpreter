@@ -9,7 +9,7 @@ public abstract class ASTNode {
     @NotNull private final SourceLoc startLocation;
     @NotNull private final SourceLoc endLocation;
 
-    public ASTNode(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation) {
+    protected ASTNode(@NotNull SourceLoc startLocation, @NotNull SourceLoc endLocation) {
         this.startLocation = startLocation;
         this.endLocation = endLocation;
     }
