@@ -1,16 +1,18 @@
 package ide;
 
 import backend.errorHandling.Diagnostics;
-import backend.interpreter.Value;
 import backend.parser.Token;
-import backend.utils.SourceLoc;
 import frontend.JavaDriver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
-class Evaluation {
+/**
+ * Static helper methods for the IDE
+ */
+enum IDEHelpers {;
 
     @Nullable
     private static String getStyleNameForToken(@NotNull Token token) {
@@ -55,10 +57,15 @@ class Evaluation {
         }
     }
 
-    static List<Highlighting> computeSyntaxHighlighting(String text) {
+    /**
+     * Lex the source code and compute the syntax highlighting based on the lexing result
+     * @param sourceCode The source code for which to do syntax highlighting
+     * @return The syntax highlighting for the source code
+     */
+    static List<Highlighting> computeSyntaxHighlighting(@NotNull String sourceCode) {
         List<Highlighting> syntaxHighlighting = new LinkedList<>();
 
-        for (Token token : JavaDriver.lex(text)) {
+        for (Token token : JavaDriver.lex(sourceCode)) {
             String styleName = getStyleNameForToken(token);
             if (styleName != null) {
                 syntaxHighlighting.add(new Highlighting(token.getStartLocation(),
@@ -68,6 +75,11 @@ class Evaluation {
         return syntaxHighlighting;
     }
 
+    /**
+     * Convert a list of evaluation errors into error highlighting
+     * @param errors The list of errors
+     * @return The syntax highlighting marking the errors in the source code
+     */
     static List<Highlighting> getErrorHighlighting(@NotNull List<Diagnostics.Error> errors) {
         List<Highlighting> errorHighlighting = new LinkedList<>();
 
@@ -77,31 +89,5 @@ class Evaluation {
         }
 
         return errorHighlighting;
-    }
-
-    static String getResultsAreaText(@NotNull Map<SourceLoc, Value> evaluationResult,
-                                     int numberOfLines) {
-        StringBuilder resultsText = new StringBuilder();
-        int currentLine = 1;
-
-        List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(evaluationResult.entrySet());
-        outputs.sort(Comparator.comparing(Map.Entry::getKey));
-        for (Map.Entry<SourceLoc, Value> output : outputs) {
-            while (currentLine < output.getKey().getLine()) {
-                resultsText.append("\n");
-                currentLine++;
-            }
-            String outputString = output.getValue().toString();
-            // Replace newlines with their escape sequence since there is only one line to display
-            // one statement's output
-            outputString = outputString.replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r");
-            resultsText.append(outputString);
-        }
-        while (currentLine <= numberOfLines) {
-            resultsText.append("\n");
-            currentLine++;
-        }
-
-        return resultsText.toString();
     }
 }

@@ -22,18 +22,15 @@ class Highlighting {
         this(start, end, Collections.singleton(style));
     }
 
-    @NotNull
-    public SourceLoc getStart() {
+    @NotNull SourceLoc getStart() {
         return start;
     }
 
-    @NotNull
-    public SourceLoc getEnd() {
+    @NotNull SourceLoc getEnd() {
         return end;
     }
 
-    @NotNull
-    public Set<String> getStyles() {
+    @NotNull Set<String> getStyles() {
         return styles;
     }
 
@@ -42,6 +39,13 @@ class Highlighting {
         return start + " - " + end + ": " + styles;
     }
 
+    /**
+     * Merge two lists of code highlightings into a single list. Both lists are assumed to be sorted
+     * by their start location and code highlighting must be non-overlapping in them
+     * @param h1 The first list of code highlightings
+     * @param h2 The first list of code highlightings
+     * @return A merged list of code highlightings
+     */
     @SuppressWarnings("Duplicates")
     static List<Highlighting> merge(List<Highlighting> h1, List<Highlighting> h2) {
         ListIterator<Highlighting> i1 = h1.listIterator();

@@ -10,12 +10,16 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
+import org.fxmisc.richtext.CodeArea;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * Model encapsulating logic of when and where to display the error popup
+ */
 class ErrorPopupModel {
 
     @FunctionalInterface
@@ -32,7 +36,10 @@ class ErrorPopupModel {
     private boolean popupHovered;
     private boolean displayedAsHover;
 
-    ErrorPopupModel(@NotNull FixItCallback callback) {
+    /**
+     * @param callback The callback to be called to apply a fix-it
+     */
+    ErrorPopupModel(@NotNull CodeArea codeArea, @NotNull FixItCallback callback) {
         errorMessageLabel = new Label();
         errorMessageLabel.setId("errorPopup");
 
@@ -50,6 +57,7 @@ class ErrorPopupModel {
         errorPopup = new Popup();
         errorPopup.getContent().add(popupContent);
 
+        codeArea.setPopupWindow(errorPopup);
 
         popupContent.addEventHandler(MouseEvent.MOUSE_ENTERED, __ -> popupHovered = true);
         popupContent.addEventHandler(MouseEvent.MOUSE_EXITED, __ -> {
@@ -60,10 +68,13 @@ class ErrorPopupModel {
         });
     }
 
-    @NotNull Popup getErrorPopup() {
-        return errorPopup;
-    }
-
+    /**
+     * Show the error popup under the given cursor position if <code>error</code> is not
+     * <code>null</code> or hide the error popup if <code>error</code> is not <code>null</code>
+     * @param parent A node onto which the error popup can be attached
+     * @param pos The cursor position at which the popup shall be displayed
+     * @param error The error to display or <code>null</code> if the popup should be hidden
+     */
     void showOrHidePopup(@NotNull Node parent, @NotNull Point2D pos,
                          @Nullable Diagnostics.Error error) {
         if (error != null) {
@@ -82,6 +93,12 @@ class ErrorPopupModel {
         }
     }
 
+    /**
+     * Show the error popup at the current cursor position if <code>error</code> is not
+     * <code>null</code> or hide the error popup if <code>error</code> is not <code>null</code>
+     * @param window The window to which the popup can be attached
+     * @param error The error to display or <code>null</code> if the popup should be hidden
+     */
     void showOrHidePopup(@NotNull Window window,
                          @Nullable Diagnostics.Error error) {
         if (error != null) {
@@ -100,8 +117,13 @@ class ErrorPopupModel {
         }
     }
 
+    /**
+     * Hide the popup
+     */
     private void hidePopup() {
         if (displayedAsHover) {
+            // If popup is displayed as a hover, only dismiss it after some time to give the user
+            // the opportunity to hover over the popup so that he can press the fix-it button
             if (hideTimer != null) {
                 hideTimer.cancel();
             }

@@ -43,7 +43,7 @@ public class IDE extends Application {
         launch(args);
     }
 
-    private static final String sampleCode = String.join("\r\n", new String[] {
+    private static final String sampleCode = String.join("\n", new String[] {
             "var n = 1000",
             "var sequence = map({0, n}, i -> (-1)^i / (2 * i + 1))",
             "var pi = 4 * reduce(sequence, 0, x y -> x + y)",
@@ -64,6 +64,7 @@ public class IDE extends Application {
 
         executor = Executors.newCachedThreadPool();
 
+        // Set up the UI
         codeArea = new CodeArea();
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
 
@@ -79,7 +80,7 @@ public class IDE extends Application {
 
         BorderPane mainPane = new BorderPane(codeScrollPane);
         mainPane.setRight(resultsArea);
-        mainPane.setTop(buildMenu());
+        mainPane.setTop(createMenu());
 
         Scene scene = new Scene(mainPane, 1024, 800);
         scene.getStylesheets().add(this.getClass().getResource("codeStyle.css").toExternalForm());
@@ -87,16 +88,19 @@ public class IDE extends Application {
         stage.setTitle("Untitled");
         stage.show();
 
-        errorPopupModel = new ErrorPopupModel((line, column, toInsert) -> {
+        // Configure the errors popup
+        errorPopupModel = new ErrorPopupModel(codeArea, (line, column, toInsert) -> {
             codeArea.replaceText(line, column, line, column, toInsert);
         });
 
         codeArea.setPopupAlignment(PopupAlignment.SELECTION_BOTTOM_CENTER);
-        codeArea.setPopupWindow(errorPopupModel.getErrorPopup());
 
         codeArea.setMouseOverTextDelay(Duration.ofMillis(100));
         codeArea.caretPositionProperty()
-                .addListener((__, ___, newValue) -> showOrHidePopup(getSourceLoc(newValue)));
+                .addListener((__, ___, newValue) -> {
+                    Diagnostics.Error error = getError(getSourceLoc(newValue));
+                    errorPopupModel.showOrHidePopup(stage, error);
+        });
 
         codeArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, event -> {
             int hoveredOffset = event.getCharacterIndex();
@@ -109,12 +113,14 @@ public class IDE extends Application {
         });
 
 
+        // Set up event streams to evaluate the source code
         setUpEventStreams();
 
+        // Inject the sample code
         codeArea.replaceText(0, 0, sampleCode);
     }
 
-    private MenuBar buildMenu() {
+    private MenuBar createMenu() {
         MenuBar menuBar = new MenuBar();
 
         Menu menuFile = new Menu("File");
@@ -176,10 +182,12 @@ public class IDE extends Application {
         return menuBar;
     }
 
-    private void showOrHidePopup(@NotNull SourceLoc caretPosition) {
-        errorPopupModel.showOrHidePopup(stage, getError(caretPosition));
-    }
-
+    /**
+     * Get the error that occurred at the given source location or <code>null</code> if there was no
+     * error at this position
+     * @param sourceLoc The location at which to check for an error
+     * @return The error at this position or <code>null</code>
+     */
     private Diagnostics.Error getError(@NotNull SourceLoc sourceLoc) {
         for (Diagnostics.Error error : errorMessages) {
             if (error.getStartLocation().compareTo(sourceLoc) <= 0 &&
@@ -190,11 +198,18 @@ public class IDE extends Application {
         return null;
     }
 
+    /**
+     * @return The source location of the current caret position
+     */
     @NotNull
     private SourceLoc getCurrentSourceLoc() {
         return getSourceLoc(codeArea.getCaretPosition());
     }
 
+    /**
+     * @param offset The offset in characters from the start in the source file
+     * @return The source location in line and column of the given character offset
+     */
     @NotNull
     private SourceLoc getSourceLoc(int offset) {
         TwoDimensional.Position pos = codeArea.offsetToPosition(offset,
@@ -203,6 +218,8 @@ public class IDE extends Application {
     }
 
     private void setUpEventStreams() {
+        // Create a stream that is updated with new syntax highlighting information every time
+        // the text changes
         EventStream<List<Highlighting>> syntaxHighlighting = codeArea.plainTextChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
                 .successionEnds(Duration.ofMillis(10))
@@ -216,7 +233,7 @@ public class IDE extends Application {
                     }
                 });
 
-        EventSource<List<Highlighting>> errorsStream = new EventSource<>();
+        // Create a stream that evaluates the source code if it wasn't changed for 0.5s
         EventStream<JavaDriver.EvaluationResult> evaluationResult = codeArea.plainTextChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
                 .successionEnds(Duration.ofMillis(500))
@@ -230,59 +247,41 @@ public class IDE extends Application {
                     }
                 });
 
+
+        // Create an event source to which errors will be pushed that occur during evaluation
+        EventSource<List<Highlighting>> errorsHighlighting = new EventSource<>();
+
+        // Extract the errors from the evaluation result, convert them to highlighting and push
+        // the highlighting to the corresponding stream
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getErrors)
-                .map(Evaluation::getErrorHighlighting)
-                .subscribe(errorsStream::push);
+                .map(IDEHelpers::getErrorHighlighting)
+                .subscribe(errorsHighlighting::push);
 
+        // Store the error messages in an instance variable so that it can be used to show the
+        // error popups. Also see if the caret position is now at an error and show the popup
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getErrors)
                 .subscribe(errors -> {
                     this.errorMessages = errors;
-                    showOrHidePopup(getCurrentSourceLoc());
+                    errorPopupModel.showOrHidePopup(stage, getError(getCurrentSourceLoc()));
                 });
 
-        codeArea.plainTextChanges()
-                .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
-                .subscribe(value -> errorsStream.push(new ArrayList<>(0)));
-
+        // Update the text in the results area upon program evaluation
         evaluationResult
                 .map(JavaDriver.EvaluationResult::getOutput)
-                .subscribe(output -> {
-                    // Clear all existing lines
-                    for (int line = 0; line < resultsArea.getParagraphs().size(); line++) {
-                        Paragraph paragraph = resultsArea.getParagraph(line);
-                        resultsArea.replaceText(line, 0, line, paragraph.length(),
-                                "");
-                    }
-                    // Create enough new lines to match the number of lines in the code
-                    while (resultsArea.getParagraphs().size() <= codeArea.getParagraphs().size()) {
-                        resultsArea.appendText("\n");
-                    }
-                    // Delete any remaining lines in the results area
-                    if (resultsArea.getParagraphs().size() > codeArea.getParagraphs().size()) {
-                        Paragraph lastParagraph = resultsArea.getParagraph(
-                                codeArea.getParagraphs().size() - 1);
-                        resultsArea.replaceText(codeArea.getParagraphs().size() - 1,
-                                lastParagraph.length(),
-                                resultsArea.getParagraphs().size() - 1,
-                                0,
-                                "");
-                    }
-                    List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(output.entrySet());
-                    outputs.sort(Comparator.comparing(Map.Entry::getKey));
-                    // Fill the lines with the results
-                    for (Map.Entry<SourceLoc, Value> entry : outputs) {
-                        int line = entry.getKey().getLine() - 1;
-                        int length = resultsArea.getParagraph(line).length();
-                        resultsArea.replaceText(line, length, line, length,
-                                entry.getValue().toString());
-                    }
-                });
+                .subscribe(this::updateResultsArea);
 
+        // Every time the source code changes, remove any error highlighting since it may be out
+        // of date
+        codeArea.plainTextChanges()
+                .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
+                .subscribe(value -> errorsHighlighting.push(new ArrayList<>(0)));
 
-        EventStreams.combine(syntaxHighlighting, errorsStream)
-                .mapToTask(this::mergeHighlights)
+        // Combine syntax and error highlighting and apply it to the code area every time the syntax
+        // highlighting or code highlighting changes
+        EventStreams.combine(syntaxHighlighting, errorsHighlighting)
+                .mapToTask(this::mergeHighlightsAsync)
                 .awaitLatest(codeArea.plainTextChanges())
                 .filterMap(task -> {
                     if (task.isSuccess()) {
@@ -294,6 +293,8 @@ public class IDE extends Application {
                 .subscribe(highlightings -> {
                     SourceLoc lastLoc = new SourceLoc(1, 1);
                     for (Highlighting h : highlightings) {
+                        // Remove any previous highlighting for code that doesn't have highlighting
+                        // any more
                         if (lastLoc.compareTo(h.getStart()) < 0) {
                             setCodeAreaHighlighting(lastLoc, h.getStart(), Collections.emptySet());
                         }
@@ -303,8 +304,50 @@ public class IDE extends Application {
                 });
     }
 
+    /**
+     * Set the text of the result area to display the output of the source code
+     * @param output The output of the source code
+     */
+    private void updateResultsArea(@NotNull Map<SourceLoc, Value> output) {
+        // Clear all existing lines
+        for (int line = 0; line < resultsArea.getParagraphs().size(); line++) {
+            Paragraph paragraph = resultsArea.getParagraph(line);
+            resultsArea.replaceText(line, 0, line, paragraph.length(),
+                    "");
+        }
+        // Create enough new lines to match the number of lines in the code
+        while (resultsArea.getParagraphs().size() <= codeArea.getParagraphs().size()) {
+            resultsArea.appendText("\n");
+        }
+        // Delete any remaining lines in the results area
+        if (resultsArea.getParagraphs().size() > codeArea.getParagraphs().size()) {
+            Paragraph lastParagraph = resultsArea.getParagraph(
+                    codeArea.getParagraphs().size() - 1);
+            resultsArea.replaceText(codeArea.getParagraphs().size() - 1,
+                    lastParagraph.length(),
+                    resultsArea.getParagraphs().size() - 1,
+                    0,
+                    "");
+        }
+        List<Map.Entry<SourceLoc, Value>> outputs = new ArrayList<>(output.entrySet());
+        outputs.sort(Comparator.comparing(Map.Entry::getKey));
+        // Fill the lines with the results
+        for (Map.Entry<SourceLoc, Value> entry : outputs) {
+            int line = entry.getKey().getLine() - 1;
+            int length = resultsArea.getParagraph(line).length();
+            resultsArea.replaceText(line, length, line, length,
+                    entry.getValue().toString());
+        }
+    }
+
+    /**
+     * Set the highlighting in between two source locations in the code area
+     * @param from The source location where the highlighting should start
+     * @param to The source location where the highlighting should end
+     * @param styles The set of styles that should be applied to this code
+     */
     private void setCodeAreaHighlighting(@NotNull SourceLoc from, @NotNull SourceLoc to,
-                                         @NotNull Set<String> styles) {
+                                         @NotNull Collection<String> styles) {
         int fromLine = from.getLine() - 1;
         int toLine = to.getLine() - 1;
         for (int line = fromLine; line <= toLine; line++) {
@@ -319,6 +362,11 @@ public class IDE extends Application {
         }
     }
 
+    /**
+     * Helper method to perform asynchronous tasks on the source code.
+     * @param toPerform The function to perform asynchronously on the source code.
+     * @return A task representing the asynchronous task
+     */
     private <T> Task<T> performOnSourceCode(Function<String, T> toPerform) {
         String text = codeArea.getText();
         Task<T> task = new Task<T>() {
@@ -336,10 +384,16 @@ public class IDE extends Application {
     }
 
     private Task<List<Highlighting>> computeSyntaxHighlightingAsync() {
-        return performOnSourceCode(Evaluation::computeSyntaxHighlighting);
+        return performOnSourceCode(IDEHelpers::computeSyntaxHighlighting);
     }
 
-    private Task<List<Highlighting>> mergeHighlights(Tuple2<List<Highlighting>,
+    /**
+     * Merge two lists of code highlightings into a single list asynchronously
+     * @param h A pair of the two code highlightings to merge. Both lists are assumed to be sorted
+     *          by their start location and code highlighting must be non-overlapping in them
+     * @return The merged code highlighting
+     */
+    private Task<List<Highlighting>> mergeHighlightsAsync(Tuple2<List<Highlighting>,
             List<Highlighting>> h) {
         Task<List<Highlighting>> task = new Task<List<Highlighting>>() {
             @Override
