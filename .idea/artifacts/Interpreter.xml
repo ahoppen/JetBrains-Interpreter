@@ -16,6 +16,7 @@
         <element id="module-output" name="Interpreter" />
         <element id="library" level="project" name="annotations-java8" />
       </element>
+      <element id="library" level="project" name="org.fxmisc.richtext:richtextfx:Latest" />
     </root>
   </artifact>
 </component>
