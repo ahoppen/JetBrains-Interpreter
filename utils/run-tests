@@ -3,4 +3,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export PATH="$DIR:$PATH"
 cd "$DIR/.."
 echo "Running tests..."
-python /Users/Alex/Documents/Developer/swift-src/llvm/utils/lit/lit.py -sv ./test
+UTILS_DIR=$( dirname "${BASH_SOURCE[0]}" )
+echo $UTILS_DIR
+python "$UTILS_DIR/lit/lit.py" -sv ./test

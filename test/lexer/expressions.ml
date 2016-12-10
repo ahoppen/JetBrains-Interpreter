@@ -1,4 +1,4 @@
-# RUN: %checkLexer
+# RUN: %verifyLexer
 
 
 # Literals

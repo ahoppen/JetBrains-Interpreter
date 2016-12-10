@@ -1,4 +1,4 @@
-# RUN: %checkParser
+# RUN: %verifyParser
 
 var a = 1 * 2 + 3 * 4
 # CHECK: (binaryOperatorExpr op=ADD

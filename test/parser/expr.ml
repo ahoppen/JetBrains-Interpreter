@@ -1,4 +1,4 @@
-# RUN: %checkParser
+# RUN: %verifyParser
 
 var a = 1
 # CHECK: (intLiteralExpr value=1)

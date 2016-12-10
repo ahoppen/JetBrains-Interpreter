@@ -4,20 +4,25 @@ import backend.errorHandling.Diagnostics;
 import backend.errorHandling.ErrorsVerifier;
 import backend.interpreter.Interpreter;
 import backend.interpreter.Value;
-import backend.utils.ASTPrinter;
-import org.jetbrains.annotations.NotNull;
 import backend.parser.Lexer;
 import backend.parser.Parser;
 import backend.parser.Token;
 import backend.typeChecker.TypeChecker;
+import backend.utils.ASTPrinter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CommandLineDriver {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length != 2 && args.length != 3) {
             printUsage();
             System.exit(1);
@@ -34,9 +39,10 @@ public class CommandLineDriver {
             filename = args[1];
         }
 
+        File inputFile = new File(filename);
         FileReader reader;
         try {
-            reader = new FileReader(new File(filename));
+            reader = new FileReader(inputFile);
         } catch (FileNotFoundException e) {
             printUsage();
             System.exit(1);
@@ -45,74 +51,129 @@ public class CommandLineDriver {
 
         Diagnostics diagnostics = new Diagnostics();
 
+        ErrorsVerifier verifier = null;
+        OutputStream outputStream = System.out;
+        ByteArrayOutputStream byteOutputStream = null;
+        if (verify) {
+            verifier = new ErrorsVerifier();
+            byteOutputStream = new ByteArrayOutputStream();
+            outputStream = byteOutputStream;
+        }
+
         switch (mode) {
             case "-lex": {
-                Lexer lexer = new Lexer(reader, diagnostics);
-                Token token = lexer.nextToken();
-                ErrorsVerifier verifier = new ErrorsVerifier();
-                while (token.getKind() !=  Token.Kind.EOF) {
-                    if (token.getKind() != Token.Kind.COMMENT) {
-                        System.out.println(token);
-                    }
-                    if (verify) {
-                        verifier.addPotentialExpectedError(token);
-                    }
-                    token = lexer.nextToken();
-                }
-                if (verify) {
-                    System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
-                } else {
-                    printErrors(diagnostics);
-                }
+                lex(reader, diagnostics, verifier, outputStream);
                 break;
             }
             case "-parse": {
-                ASTPrinter printer = new ASTPrinter();
-                ErrorsVerifier verifier = new ErrorsVerifier();
-                Parser parser = new Parser(reader, printer, diagnostics, verifier);
-                parser.parse();
-                if (verify) {
-                    System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
-                } else {
-                    printErrors(diagnostics);
-                }
+                parse(reader, diagnostics, verifier, outputStream);
                 break;
             }
             case "-typeCheck": {
-                ASTPrinter printer = new ASTPrinter();
-                TypeChecker typeChecker = new TypeChecker(printer, diagnostics);
-                ErrorsVerifier verifier = new ErrorsVerifier();
-                Parser parser = new Parser(reader, typeChecker, diagnostics, verifier);
-                parser.parse();
-                if (verify) {
-                    System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
-                } else {
-                    printErrors(diagnostics);
-                }
+                typeCheck(reader, diagnostics, verifier, outputStream);
                 break;
             }
             case "-evaluate": {
-                Interpreter interpreter = new Interpreter(diagnostics);
-                TypeChecker typeChecker = new TypeChecker(interpreter, diagnostics);
-                ErrorsVerifier verifier = new ErrorsVerifier();
-                Parser parser = new Parser(reader, typeChecker, diagnostics, verifier);
-                parser.parse();
-                boolean failure = false;
-                if (verify) {
-                    failure = verifyErrors(verifier, diagnostics);
-                } else {
-                    printErrors(diagnostics);
-                }
-                for (Value value : interpreter.getOutput().values()) {
-                    System.out.print(value);
-                }
-                System.exit(failure ? 0 : 1);
+                evaluate(reader, diagnostics, verifier, outputStream);
                 break;
             }
             default:
                 printUsage();
                 System.exit(1);
         }
+
+        verifyOutput(inputFile, byteOutputStream, diagnostics, verifier);
+    }
+
+    private static void lex(@NotNull FileReader reader, @NotNull Diagnostics diagnostics,
+                            @Nullable ErrorsVerifier verifier,
+                            @NotNull OutputStream outputStream) throws IOException {
+        Lexer lexer = new Lexer(reader, diagnostics);
+        Token token = lexer.nextToken();
+        while (token.getKind() !=  Token.Kind.EOF) {
+            if (token.getKind() != Token.Kind.COMMENT) {
+                outputStream.write(token.toString().getBytes());
+                outputStream.write(System.lineSeparator().getBytes());
+            }
+            if (verifier != null) {
+                verifier.addPotentialExpectedError(token);
+            }
+            token = lexer.nextToken();
+        }
+    }
+
+    private static void parse(@NotNull FileReader reader, @NotNull Diagnostics diagnostics,
+                              @Nullable ErrorsVerifier verifier,
+                              @NotNull OutputStream outputStream) {
+        ASTPrinter printer = new ASTPrinter(outputStream);
+        Parser parser = new Parser(reader, printer, diagnostics, verifier);
+        parser.parse();
+    }
+
+    private static void typeCheck(@NotNull FileReader reader, @NotNull Diagnostics diagnostics,
+                                  @Nullable ErrorsVerifier verifier,
+                                  @NotNull OutputStream outputStream) {
+        ASTPrinter printer = new ASTPrinter(outputStream);
+        TypeChecker typeChecker = new TypeChecker(printer, diagnostics);
+        Parser parser = new Parser(reader, typeChecker, diagnostics, verifier);
+        parser.parse();
+    }
+
+    private static void evaluate(@NotNull FileReader reader, @NotNull Diagnostics diagnostics,
+                                 @Nullable ErrorsVerifier verifier,
+                                 @NotNull OutputStream outputStream) throws IOException {
+        Interpreter interpreter = new Interpreter(diagnostics);
+        TypeChecker typeChecker = new TypeChecker(interpreter, diagnostics);
+        Parser parser = new Parser(reader, typeChecker, diagnostics, verifier);
+        parser.parse();
+
+        for (Value value : interpreter.getOutput().values()) {
+            outputStream.write(value.toString().getBytes());
+            outputStream.write(System.lineSeparator().getBytes());
+        }
+    }
+
+    private static void verifyOutput(@NotNull File verifyFile,
+                                     @Nullable ByteArrayOutputStream outputStream,
+                                     @NotNull Diagnostics diagnostics,
+                                     @Nullable ErrorsVerifier verifier) throws IOException {
+        Queue<String> checkPatterns = getVerificationStrings(verifyFile);
+
+        if (verifier != null) {
+            assert outputStream != null;
+            ByteArrayInputStream byteStream = new ByteArrayInputStream(outputStream.toByteArray());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(byteStream));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!checkPatterns.isEmpty() && line.contains(checkPatterns.peek())) {
+                    checkPatterns.remove();
+                }
+                System.out.println(line);
+            }
+            if (!checkPatterns.isEmpty()) {
+                System.err.println("Pattern not found:");
+                System.err.println(checkPatterns.peek());
+                System.exit(1);
+            }
+            System.exit(verifyErrors(verifier, diagnostics) ? 0 : 1);
+        } else {
+            printErrors(diagnostics);
+        }
+    }
+
+    private static Queue<String> getVerificationStrings(@NotNull File verifyFile) throws IOException{
+        BufferedReader reader = new BufferedReader(new FileReader(verifyFile));
+        String line;
+        Queue<String> checkPatterns = new LinkedList<>();
+        while ((line = reader.readLine()) != null) {
+            Pattern pattern = Pattern.compile("CHECK:(.*)$");
+            Matcher matcher = pattern.matcher(line);
+            if (matcher.find()) {
+                String checkPattern = matcher.group(1).trim();
+                checkPatterns.add(checkPattern);
+            }
+        }
+        return checkPatterns;
     }
 
     private static boolean verifyErrors(@NotNull ErrorsVerifier verifier,

@@ -3,9 +3,18 @@ package backend.utils;
 import backend.AST.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.stream.Stream;
+
 public final class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
 
     private int indentation = 0;
+    @NotNull private OutputStream outputStream;
+
+    public ASTPrinter(@NotNull OutputStream outputStream) {
+        this.outputStream = outputStream;
+    }
 
     @Override
     public void consumeStmt(@NotNull Stmt stmt) {
@@ -26,10 +35,15 @@ public final class ASTPrinter implements ASTConsumer, ASTVisitor<Void> {
     }
 
     private void print(@NotNull String str) {
-        for (int i = 0; i < indentation; i++) {
-            System.out.print("  ");
+        try {
+            for (int i = 0; i < indentation; i++) {
+                outputStream.write("  ".getBytes());
+            }
+            outputStream.write(str.getBytes());
+            outputStream.write(System.lineSeparator().getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        System.out.println(str);
     }
 
     @Override

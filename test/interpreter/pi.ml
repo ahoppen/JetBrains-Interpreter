@@ -6,4 +6,5 @@ var pi = 4 * reduce(sequence, 0, x y -> x + y)
 print "pi = "
 out pi
 
-# CHECK: pi = 3.14259
+# CHECK: pi =
+# CHECK: 3.14259

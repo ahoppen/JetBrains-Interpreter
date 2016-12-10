@@ -1,4 +1,4 @@
-# RUN: %checkLexer
+# RUN: %verifyLexer
 
 out 1
 # CHECK: IDENTIFIER(out)

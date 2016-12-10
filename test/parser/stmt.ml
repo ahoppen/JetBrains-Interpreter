@@ -1,4 +1,4 @@
-# RUN: %checkParser
+# RUN: %verifyParser
 
 1.2 # expectedError@1: Unexpected start of statements. Statements must start with 'var', 'out' or 'print' but found '1.2'
 a # expectedError@1: Unexpected start of statements. Statements must start with 'var', 'out' or 'print' but found 'a'
