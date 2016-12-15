@@ -6,6 +6,7 @@ import backend.utils.ASTConsumer;
 import backend.utils.ASTVisitor;
 import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -36,7 +37,15 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
     private final Stack<FloatValue> recycledFloatValues = new Stack<>();
 
     public Interpreter(@NotNull Diagnostics diagnostics) {
+        this(diagnostics, null);
+    }
+
+    private Interpreter(@NotNull Diagnostics diagnostics,
+                        @Nullable Map<Variable, Value> variableValues) {
         this.diagnostics = diagnostics;
+        if (variableValues != null) {
+            this.variableValues.putAll(variableValues);
+        }
     }
 
     /**
@@ -292,7 +301,7 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         for (int j = 0; j < numberOfThreads; j++) {
             final int finalJ = j;
             threads[j] = new Thread(() -> {
-                Interpreter subInterpreter = new Interpreter(diagnostics);
+                Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
                 Value[] values = toTransform.getValues();
 
                 int from = finalJ * valuesPerThread;
@@ -458,7 +467,7 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             // main thread
             Value currentValue = baseValue;
 
-            Interpreter subInterpreter = new Interpreter(diagnostics);
+            Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
 
             for (Value value : toTransform.getValues()) {
                 currentValue = applyLambda.apply(subInterpreter, currentValue, value);
@@ -475,7 +484,7 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         for (int j = 0; j < numberOfThreads; j++) {
             final int finalJ = j;
             threads[j] = new Thread(() -> {
-                Interpreter subInterpreter = new Interpreter(diagnostics);
+                Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
                 Value[] values = toTransform.getValues();
 
                 int from = finalJ * valuesPerThread;
@@ -517,7 +526,7 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             return ErrorValue.get();
         }
 
-        Interpreter subInterpreter = new Interpreter(diagnostics);
+        Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
         Value currentValue = baseValue;
         for (Value value : resultsOfThreads) {
             currentValue = applyLambda.apply(subInterpreter, currentValue, value);

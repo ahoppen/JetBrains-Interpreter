@@ -32,6 +32,10 @@ final class VariableScope {
 
     @Nullable
     Variable lookupVariable(@NotNull String name) {
-        return identifiers.get(name);
+        Variable var = identifiers.get(name);
+        if (var == null && outerScope != null) {
+            var = outerScope.lookupVariable(name);
+        }
+        return var;
     }
 }
