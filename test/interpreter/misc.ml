@@ -17,3 +17,12 @@ var floatSequence = map({1, 5}, x -> x * 0.1)
 var r3 = reduce(floatSequence, 0, a b -> a + b)
 out r3
 print "\n" # CHECK: 1.5
+
+var x1 = 1 / 0 # expectedError@12: Division by 0
+var x2 = 1 / 0.0 # expectedError@12: Division by 0
+var x3 = 1.0 / 0 # expectedError@14: Division by 0
+var x4 = 1.0 / 0.0 # expectedError@14: Division by 0
+
+var x5 = 0 ^ -1
+
+var seq4 = map({1, 3}, x -> x)

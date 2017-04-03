@@ -60,4 +60,5 @@ public enum Diag {
     public static final String range_upper_bound_smaller_than_lower_bound = "Upper bound of range cannot be smaller than the lower bound";
     public static final String lower_bound_of_range_not_int = "Lower bound of a range must be an integer and not '%s'";
     public static final String upper_bound_of_range_not_int = "Upper bound of a range must be an integer and not '%s'";
+    public static final String division_by_zero = "Division by 0";
 }

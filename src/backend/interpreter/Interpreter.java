@@ -1,12 +1,13 @@
 package backend.interpreter;
 
 import backend.AST.*;
-import org.jetbrains.annotations.NotNull;
-import backend.utils.ASTConsumer;
-import backend.utils.ASTVisitor;
 import backend.errorHandling.Diag;
 import backend.errorHandling.Diagnostics;
+import backend.utils.ASTConsumer;
+import backend.utils.ASTVisitor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import utils.ThreadManager;
 
 import java.util.*;
 
@@ -150,6 +151,10 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     // Division might result in a fraction, hence return a double value
                     int lhsValue = ((IntValue)lhs).getValue();
                     int rhsValue = ((IntValue)rhs).getValue();
+                    if (rhsValue == 0) {
+                        diagnostics.error(binOpExpr, Diag.division_by_zero);
+                        return ErrorValue.get();
+                    }
                     if (lhsValue % rhsValue == 0) {
                         // Division results in an integer -> return an IntValue
                         value = lhsValue / rhsValue;
@@ -194,6 +199,10 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     value = ((IntValue)lhs).getValue() * ((FloatValue)rhs).getValue();
                     break;
                 case DIV:
+                    if (((FloatValue)rhs).getValue() == 0) {
+                        diagnostics.error(binOpExpr, Diag.division_by_zero);
+                        return ErrorValue.get();
+                    }
                     value = ((IntValue)lhs).getValue() / ((FloatValue)rhs).getValue();
                     break;
                 case POW:
@@ -218,6 +227,10 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     value = ((FloatValue)lhs).getValue() * ((IntValue)rhs).getValue();
                     break;
                 case DIV:
+                    if (((IntValue)rhs).getValue() == 0) {
+                        diagnostics.error(binOpExpr, Diag.division_by_zero);
+                        return ErrorValue.get();
+                    }
                     value = ((FloatValue)lhs).getValue() / ((IntValue)rhs).getValue();
                     break;
                 case POW:
@@ -242,6 +255,10 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
                     value = ((FloatValue)lhs).getValue() * ((FloatValue)rhs).getValue();
                     break;
                 case DIV:
+                    if (((FloatValue)rhs).getValue() == 0) {
+                        diagnostics.error(binOpExpr, Diag.division_by_zero);
+                        return ErrorValue.get();
+                    }
                     value = ((FloatValue)lhs).getValue() / ((FloatValue)rhs).getValue();
                     break;
                 case POW:
@@ -294,60 +311,35 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
 
         boolean valuesRecyclable = argument.isRecyclable();
 
-        final int numberOfThreads = Runtime.getRuntime().availableProcessors();
-        int valuesPerThread = toTransform.getValues().length / numberOfThreads;
+        Value[] values = toTransform.getValues();
 
-        Thread[] threads = new Thread[numberOfThreads];
-        for (int j = 0; j < numberOfThreads; j++) {
-            final int finalJ = j;
-            threads[j] = new Thread(() -> {
-                Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
-                Value[] values = toTransform.getValues();
+        ThreadManager.runOnMaxNumberOfThreads(values, (value, __, i) -> {
+            Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
 
-                int from = finalJ * valuesPerThread;
-                int to;
-                if (finalJ == numberOfThreads - 1) {
-                    to = values.length;
-                } else {
-                    to = from + valuesPerThread;
-                }
-
-                for (int i = from; i < to; i++) {
-                    Value value = values[i];
-                    // The value is used as a variable in the lambda and can thus not be
-                    // recycled while evaluating the lambda
-                    value.setRecyclable(false);
-                    subInterpreter.variableValues.put(mapExpr.getLambdaParam(), value);
-                    // Set the variable's value and evaluate the expression with this value
-                    Value transformedValue = subInterpreter.evaluateExpr(mapExpr.getLambda());
-                    if (transformedValue instanceof ErrorValue) {
-                        errorOccurred[0] = true;
-                        break;
-                    }
-                    transformedValues[i] = transformedValue;
-
-                    // Recycle the value in the subInterpreter since it tends to need the value
-                    // for the next lambda execution
-                    if (valuesRecyclable) {
-                        value.setRecyclable(true);
-                        if (value instanceof IntValue) {
-                            subInterpreter.recycle((IntValue)value);
-                        } else if (value instanceof FloatValue) {
-                            subInterpreter.recycle((FloatValue)value);
-                        }
-                    }
-                }
-            });
-            threads[j].start();
-        }
-
-        for (Thread t : threads) {
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException();
+            // The value is used as a variable in the lambda and can thus not be
+            // recycled while evaluating the lambda
+            value.setRecyclable(false);
+            subInterpreter.variableValues.put(mapExpr.getLambdaParam(), value);
+            // Set the variable's value and evaluate the expression with this value
+            Value transformedValue = subInterpreter.evaluateExpr(mapExpr.getLambda());
+            if (transformedValue instanceof ErrorValue) {
+                errorOccurred[0] = true;
+                return null;
             }
-        }
+            transformedValues[i] = transformedValue;
+
+            // Recycle the value in the subInterpreter since it tends to need the value
+            // for the next lambda execution
+            if (valuesRecyclable) {
+                value.setRecyclable(true);
+                if (value instanceof IntValue) {
+                    subInterpreter.recycle((IntValue)value);
+                } else if (value instanceof FloatValue) {
+                    subInterpreter.recycle((FloatValue)value);
+                }
+            }
+            return null;
+        });
 
         if (errorOccurred[0]) {
             return ErrorValue.get();
@@ -451,8 +443,6 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
         SequenceValue toTransform = (SequenceValue)argument;
 
         final int numberOfThreads = Runtime.getRuntime().availableProcessors();
-        int valuesPerThread = toTransform.getValues().length / numberOfThreads;
-        Value[] resultsOfThreads = new Value[numberOfThreads];
 
         boolean[] errorOccurred = new boolean[] {false};
 
@@ -462,65 +452,21 @@ public final class Interpreter implements ASTConsumer, ASTVisitor<Value> {
             return interpreter.evaluateExpr(reduceExpr.getLambda());
         };
 
-        if (valuesPerThread <= 2) {
-            // Most threads wouldn't even do a single lambda execution. Just do everything on the
-            // main thread
-            Value currentValue = baseValue;
+        Value[] values = toTransform.getValues();
 
+        List<Value> resultsOfThreads = ThreadManager.runOnMaxNumberOfThreads(values, (value, previousValue, i) -> {
             Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
 
-            for (Value value : toTransform.getValues()) {
-                currentValue = applyLambda.apply(subInterpreter, currentValue, value);
-
-                if (currentValue instanceof ErrorValue) {
-                    return ErrorValue.get();
-                }
+            if (previousValue == null) {
+                return value;
             }
 
-            return currentValue;
-        }
-
-        Thread[] threads = new Thread[numberOfThreads];
-        for (int j = 0; j < numberOfThreads; j++) {
-            final int finalJ = j;
-            threads[j] = new Thread(() -> {
-                Interpreter subInterpreter = new Interpreter(diagnostics, variableValues);
-                Value[] values = toTransform.getValues();
-
-                int from = finalJ * valuesPerThread;
-                int to;
-                if (finalJ == numberOfThreads - 1) {
-                    to = values.length;
-                } else {
-                    to = from + valuesPerThread;
-                }
-
-                Value currentValue = applyLambda.apply(subInterpreter, values[from],
-                        values[from + 1]);
-                if (currentValue instanceof ErrorValue) {
-                    errorOccurred[0] = true;
-                    return;
-                }
-
-                for (int i = from + 2; i < to; i++) {
-                    currentValue = applyLambda.apply(subInterpreter, currentValue, values[i]);
-                    if (currentValue instanceof ErrorValue) {
-                        errorOccurred[0] = true;
-                        return;
-                    }
-                }
-                resultsOfThreads[finalJ] = currentValue;
-            });
-            threads[j].start();
-        }
-
-        for (Thread t : threads) {
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException();
+            if (previousValue instanceof ErrorValue) {
+                return previousValue;
             }
-        }
+
+            return applyLambda.apply(subInterpreter, previousValue, value);
+        });
 
         if (errorOccurred[0]) {
             return ErrorValue.get();
