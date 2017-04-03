@@ -8,3 +8,5 @@ op ::= + | - | * | / | ^
 stmt ::= var identifier = expr | out expr | print “string”
 program ::= stmt | program stmt
 ```
+
+![Screenshot of the Interpreter](Screenshot.png)
